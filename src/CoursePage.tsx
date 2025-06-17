@@ -1,5 +1,5 @@
 import { useState } from "react";
-import logo from "../images/maestrominds-300x300.jpg";
+import logo from "./images/maestrominds-300x300.jpg";
 
 const courseData = {
   title: "Mastering Modern Web Development",
