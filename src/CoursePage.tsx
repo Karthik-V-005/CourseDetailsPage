@@ -1,5 +1,6 @@
 import { useState } from "react";
 import logo from "./images/maestrominds-300x300.jpg";
+import { useNavigate } from "react-router-dom";
 
 const courseData = {
   title: "Mastering Modern Web Development",
@@ -29,58 +30,58 @@ const courseData = {
   videos: [
     {
       id: "vid1",
-      title: "Introduction to Modern Web Development",
+      title: "1.1 Introduction to Modern Web Development",
       url: "https://www.w3schools.com/html/mov_bbb.mp4",
       description: "Overview of course objectives and setup.",
     },
     {
       id: "vid2",
-      title: "React Fundamentals",
+      title: "1.2 React Fundamentals",
       url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
       description: "Core React concepts including components and JSX.",
     },
     {
       id: "vid3",
-      title: "CSS Grid and Flexbox",
+      title: "1.3 CSS Grid and Flexbox",
       url: "https://www.w3schools.com/html/movie.mp4",
       description: "Learn layout techniques with CSS Grid and Flexbox.",
     },
     {
       id: "vid4",
-      title: "Accessibility and Best Practices",
+      title: "1.4 Accessibility and Best Practices",
       url: "https://media.w3.org/2010/05/sintel/trailer.mp4",
       description: "Building accessible components and design.",
     },
     {
       id: "vid5",
-      title: "State Management in React",
+      title: "1.5 State Management in React",
       url: "https://www.w3schools.com/html/mov_bbb.mp4",
       description:
         "Explore useState, useReducer, and context for managing state in React apps.",
     },
     {
       id: "vid6",
-      title: "Routing with React Router",
+      title: "1.6 Routing with React Router",
       url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
       description:
         "Implement client-side routing and navigation using React Router.",
     },
     {
       id: "vid7",
-      title: "Deploying Your Web App",
+      title: "1.7 Deploying Your Web App",
       url: "https://www.w3schools.com/html/movie.mp4",
       description: "Learn how to deploy your React application to production.",
     },
     {
       id: "vid8",
-      title: "Testing React Components",
+      title: "1.8 Testing React Components",
       url: "https://media.w3.org/2010/05/sintel/trailer.mp4",
       description:
         "Introduction to testing React components with popular tools.",
     },
     {
       id: "vid9",
-      title: "Performance Optimization",
+      title: "1.9 Performance Optimization",
       url: "https://www.w3schools.com/html/mov_bbb.mp4",
       description:
         "Tips and techniques for optimizing the performance of your React apps.",
@@ -212,77 +213,41 @@ type TopMenuBarProps = {
   userName: string;
 };
 const TopMenuBar = (_props: TopMenuBarProps) => {
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
-    <header className="topmenu" style={{ padding: "50px 50px 50px 60px" }}>
-      <div className="topmenu-left">
-        <div
-          className="logo"
-          style={{ display: "flex", alignItems: "center", gap: 10 }}
-          >
-        <img
-          src={logo}
-          alt="Maestrominds logo"
-          style={{
-            width: 72,
-            height: 72,
-            marginRight: 10,
-            objectFit: "cover",
-            boxShadow: "0 2px 8px rgba(90,56,30,0.10)",
-            background: "#fff4e6",
-          }}
-          loading="lazy"
-          aria-hidden="true"
-          tabIndex={0}
-          aria-label="Maestrominds Learning Hub"
-        />
-            <span
-            style={{
-              fontWeight: 700,
-              fontSize: "1.3rem",
-              fontFamily: "'Poppins', sans-serif",
-              color: "#5a381e",
-              userSelect: "none",
-              letterSpacing: "0.01em",
-              maxWidth: "160px",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-              display: "inline-block",
-              verticalAlign: "middle",
-              whiteSpace: "normal",
-              lineHeight: 1.2,
-            }}
-            >
-            Maestrominds Learning Hub
-            </span>
+    <>
+      <button
+        className="hamburger-btn"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle menu"
+      >
+        ☰
+      </button>
+
+      <header className={`topmenu ${menuOpen ? 'menu-visible' : 'menu-hidden'}`}>
+        <div className="topmenu-left">
+          <div className="logo">
+            <img src={logo} alt="Maestrominds logo" className="logo-img" />
+            <span className="logo-text">Maestrominds Learning Hub</span>
+          </div>
+          <div className="search-bar-container">
+            <input
+              type="search"
+              className="search-bar"
+              placeholder="🔍 Search courses"
+            />
+          </div>
         </div>
-        <div className="search-bar-container">
-          <input
-            type="search"
-            className="search-bar"
-            placeholder="🔍 Search courses"
-            aria-label="Search courses"
-            
-            style={{ width: "330px" }}
-          />
+
+        <div className="nav-buttons">
+          <button className="nav-button" onClick={() => navigate("/all-courses")}>All Courses</button>
+          <button className="nav-button">My Courses</button>
+          <button className="nav-button add-course">+ Add Course</button>
         </div>
-        <button className="nav-button" type="button" aria-label="All Courses" style={
-          { marginLeft: "32px" }
-        }>
-          All Courses
-        </button>
-        <button className="nav-button" type="button" aria-label="My Courses">
-          My Courses
-        </button>
-        <button
-          className="nav-button add-course"
-          type="button"
-          aria-label="Add Course"
-        >
-          + Add Course
-        </button>
-      </div>
-      <div className="topmenu-right"></div>
-    </header>
+      </header>
+    </>
   );
 };
 
@@ -295,335 +260,511 @@ export default function CoursePage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
-        * {
-          box-sizing: border-box;
-        }
-        html, body, #root {
-          height: 100%;
-          margin: 0;
-          font-family: 'Poppins', sans-serif;
-          background-color: #f8f1e7;
-          color: #5a381e;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-        .page-wrapper {
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-        }
-        a {
-          color: inherit;
-          text-decoration: none;
-        }
-        a:hover, a:focus {
-          text-decoration: underline;
-          outline: none;
-        }
-        h1, h2, h3 {
-          margin: 0;
-          line-height: 1.2;
-          font-weight: 700;
-          color: #5a381e;
-        }
-        p {
-          margin: 0;
-          line-height: 1.6;
-          color: #6e4c2e;
-        }
-        main {
-          margin-left: 0;
-          margin-top: 64px;
-          padding: 48px 35px;
-          min-height: calc(100vh - 64px);
-          overflow-y: auto;
-          max-width: 100%;
-          display: flex;
-          gap: 32px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .video-wrapper {
-          width: 65%;
-          aspect-ratio: 16 / 9;
-          background: #000;
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-        }
-        video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          border-radius: 16px;
-        }
-        .video-description {
-          margin-top: 8px;
-          font-size: 1rem;
-          color: #6e4c2e;
-          font-weight: 600;
-          background: #fff4e6;
-          padding: 8px 16px;
-          border-radius: 12px;
-          max-width: 90%;
-          user-select: none;
-        }
-        .course-info-details-container {
-          width: 100%;
-          display: flex;
-          flex-direction: row;
-          gap: 24px;
-          max-width: 8000px;
-          padding: 50px;
-          padding-top: 4px;
-        }
-        .course-info {
-          max-width: 100%;
-        }
-        .course-title {
-          font-size: 2rem;
-          color: #5a381e;
-        }
-        .course-subtitle {
-          font-weight: 600;
-          font-size: 1.125rem;
-          color: #865c30;
-          margin-bottom: 12px;
-          padding-top: 12px;
-        }
-        .course-description {
-          font-size: 1rem;
-          color: #6e4c2e;
-          line-height: 1.5;
-          max-width: 100%;
-          text-align: justify;
-        }
-        .star-rating {
-          margin-top: 12px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #a37c4c;
-          font-size: 0.95rem;
-          user-select: none;
-        }
-        .rating-count {
-          margin-left: 8px;
-        }
-        .video-list-section {
-          width: 30%;
-          max-height: 520px;
-          overflow-y: auto;
-          background: #fff4e6;
-          border-radius: 16px;
-          padding: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          user-select: none;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          max-width: 400px;
-        }
-        .video-list-heading {
-          font-weight: 700;
-          font-size: 1.25rem;
-          margin-bottom: 12px;
-          color: #5a381e;
-          user-select: none;
-        }
-        .video-list-item {
-          padding: 10px 14px;
-          border-radius: 12px;
-          cursor: pointer;
-          font-weight: 600;
-          color: #5a381e;
-          background-color: transparent;
-          transition: background-color 0.25s;
-          user-select: none;
-          text-align: left;
-          border: none;
-          outline: none;
-        }
-        .video-list-item:hover,
-        .video-list-item:focus {
-          background-color: #bc6c2580;
-        }
-        .video-list-item.active {
-          background-color: #bc6c25;
-          color: #fff4e6;
-          cursor: default;
-        }
-        .details-card {
-          background: #fff4e6;
-          border-radius: 16px;
-          padding: 24px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          max-width: 100%;
-        }
-        .detail-row {
-          display: flex;
-          align-items: center;
-          font-size: 0.95rem;
-          color: #6e4c2e;
-          gap: 4px;
-        }
-        .detail-label {
-          font-weight: 600;
-          flex-grow: 0;
-          width: 90px;
-          color: #a37c4c;
-        }
-        .instructor-card {
-          width: 100%;
-          background: #fff4e6;
-          border-radius: 16px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          text-align: center;
-        }
-        .instructor-photo {
-          width: 96px;
-          height: 96px;
-          border-radius: 50%;
-          object-fit: cover;
-          margin: 0 auto 16px auto;
-          border: 3px solid #a97449;
-          box-shadow: 0 4px 10px rgba(169, 116, 73, 0.4);
-        }
-        .instructor-name {
-          font-weight: 700;
-          font-size: 1.25rem;
-          color: #5a381e;
-          margin-bottom: 8px;
-        }
-        .instructor-bio {
-          font-size: 0.95rem;
-          color: #865c30;
-          max-width: 320px;
-          margin-left: auto;
-          margin-right: auto;
-        }
-        .enroll-btn {
-          background: #bc6c25;
-          color: #fff4e6;
-          font-weight: 700;
-          font-size: 1.1rem;
-          padding: 16px 24px;
-          border-radius: 12px;
-          border: none;
-          cursor: pointer;
-          margin-top: 24px;
-          transition: background-color 0.3s ease;
-          max-width: 320px;
-          align-self: center;
-        }
-        .enroll-btn:hover, .enroll-btn:focus {
-          background-color: #a05818;
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.6);
-        }
-        /* Top menu styles */
-        .topmenu {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 64px;
-          background-color: #f3e7d3;
-          border-bottom: 1px solid #d9cabb;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0 24px;
-          z-index: 110;
-          font-weight: 600;
-          font-size: 1rem;
-          color: #5a381e;
-        }
-        .topmenu-left {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-        }
-        .logo {
-          user-select: none;
-          font-weight: 700;
-          font-size: 1.5rem;
-          font-family: 'Poppins', sans-serif;
-          color: #5a381e;
-          letter-spacing: 0.05em;
-        }
-        .search-bar-container {
-          flex: 1 1 auto;
-          max-width: 300px;
-        }
-        .search-bar {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid #d9cabb;
-          border-radius: 8px;
-          font-size: 1rem;
-          color: #5a381e;
-          background-color: #fcf6e9;
-          transition: border-color 0.3s ease;
-        }
-        .search-bar::placeholder {
-          color: #a37c4c;
-        }
-        .search-bar:focus {
-          outline: none;
-          border-color: #bc6c25;
-          box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.3);
-          background-color: #fff9f0;
-        }
-        .nav-button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #bc6c25;
-          font-weight: 700;
-          font-size: 1rem;
-          padding: 8px 16px;
-          border-radius: 8px;
-          white-space: nowrap;
-          transition: background-color 0.3s ease;
-        }
-        .nav-button:hover, .nav-button:focus {
-          background-color: #ffe6b3;
-          outline: none;
-        }
-        .nav-button.add-course {
-          background-color: #bc6c25;
-          color: #fff4e6;
-        }
-        .nav-button.add-course:hover, .nav-button.add-course:focus {
-          background-color: #a05818;
-          outline: none;
-        }
-        /* Responsive */
-        @media (max-width: 1024px) {
-          main {
-            flex-direction: column;
-            padding: 32px 16px;
-          }
-          .video-wrapper, .video-description, .course-info-details-container, .video-list-section {
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          .video-list-section {
-            max-height: 300px;
-          }
-          .enroll-btn {
-            max-width: 100%;
-          }
-        }
+/* ===== Base Reset ===== */
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  background-color: #f8f1e7;
+  color: #5a381e;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Typography ===== */
+h1, h2, h3 {
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #5a381e;
+}
+
+p {
+  margin: 0;
+  line-height: 1.6;
+  color: #6e4c2e;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover, a:focus {
+  text-decoration: underline;
+  outline: none;
+}
+
+/* ===== Layout ===== */
+.page-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-top: 80px;
+}
+
+main {
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ===== Top Menu ===== */
+.topmenu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  min-height: 80px;
+  background-color: #f3e7d3;
+  border-bottom: 1px solid #d9cabb;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  z-index: 110;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #5a381e;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.topmenu-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.search-bar-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.logo-img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  background: #fff4e6;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(90, 56, 30, 0.1);
+}
+
+.logo-text {
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  color: #5a381e;
+  user-select: none;
+  letter-spacing: 0.01em;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: unset;
+  max-width: none;
+  line-height: 1.2;
+  font-size: 0.95rem;
+}
+
+.search-bar {
+  width: 100%;
+  max-width: 300px;
+  padding: 8px;
+  border: 1px solid #d9cabb;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #5a381e;
+  background-color: #fcf6e9;
+  transition: border-color 0.3s ease;
+}
+
+.search-bar::placeholder {
+  color: #a37c4c;
+}
+
+.search-bar:focus {
+  outline: none;
+  border-color: #bc6c25;
+  box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.3);
+  background-color: #fff9f0;
+}
+
+.nav-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #bc6c25;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.nav-button:hover,
+.nav-button:focus {
+  background-color: #ffe6b3;
+  outline: none;
+}
+
+.nav-button.add-course {
+  background-color: #bc6c25;
+  color: #fff4e6;
+  border: none;
+}
+
+.nav-button.add-course:hover,
+.nav-button.add-course:focus {
+  background-color: #a05818;
+  outline: none;
+}
+
+.hamburger-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .logo-text {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    max-width: 100%;
+  }
+
+  .hamburger-btn {
+    display: block;
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 999;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    color: #5a381e;
+  }
+
+  .topmenu {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .topmenu-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .search-bar-container,
+  .nav-buttons {
+    width: 100%;
+  }
+
+  .nav-button {
+    width: 100%;
+    text-align: left;
+    padding-left: 0;
+  }
+}
+
+
+
+
+
+/* ===== Video Section ===== */
+.video-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 16px;
+}
+
+.video-description {
+  margin-top: 8px;
+  font-size: 1rem;
+  color: #6e4c2e;
+  font-weight: 600;
+  background: #fff4e6;
+  padding: 8px 16px;
+  border-radius: 12px;
+  user-select: none;
+}
+
+/* (Remaining styles stay unchanged) */
+
+
+/* ===== Video List ===== */
+.video-list-section {
+  width: 100%;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #fff4e6;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.video-list-heading {
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 12px;
+  color: #5a381e;
+  user-select: none;
+}
+
+.video-list-item {
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #5a381e;
+  background-color: transparent;
+  transition: background-color 0.25s;
+  text-align: left;
+  border: none;
+  outline: none;
+  user-select: none;
+}
+
+.video-list-item:hover,
+.video-list-item:focus {
+  background-color: #bc6c2580;
+}
+
+.video-list-item.active {
+  background-color: #bc6c25;
+  color: #fff4e6;
+  cursor: default;
+}
+
+/* ===== Course Info & Details ===== */
+.course-info-details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.course-info {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 0 16px;
+}
+
+.course-title {
+  font-size: 1.75rem;
+}
+
+.course-subtitle {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #865c30;
+  margin-bottom: 12px;
+  padding-top: 12px;
+}
+
+.course-description {
+  font-size: 1rem;
+  color: #6e4c2e;
+  line-height: 1.5;
+  text-align: justify;
+  margin-bottom: 24px;
+  padding: 0 16px;
+}
+
+.details-card {
+  background: #fff4e6;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #6e4c2e;
+  gap: 8px;
+}
+
+.detail-label {
+  font-weight: 600;
+  width: 90px;
+  color: #a37c4c;
+}
+
+/* ===== Instructor Card ===== */
+.instructor-card {
+  background: #fff4e6;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  text-align: center;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+  margin-top: 24px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.instructor-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #a97449;
+  box-shadow: 0 4px 10px rgba(169, 116, 73, 0.4);
+}
+
+.instructor-name {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #5a381e;
+}
+
+.instructor-bio {
+  font-size: 0.95rem;
+  color: #865c30;
+  max-width: 320px;
+}
+
+/* ===== Enroll Button ===== */
+.enroll-btn {
+  background: #bc6c25;
+  color: #fff4e6;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 16px 24px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 16px;
+  margin-bottom: 32px;
+  transition: background-color 0.3s ease;
+  align-self: center;
+  width: 100%;
+  max-width: 320px;
+}
+
+.enroll-btn:hover,
+.enroll-btn:focus {
+  background-color: #a05818;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.6);
+}
+
+
+/* ===== Responsive Breakpoints ===== */
+@media (max-width: 1024px) {
+  main {
+    flex-direction: column;
+    padding: 32px 16px;
+  }
+
+  .video-wrapper,
+  .video-description,
+  .course-info-details-container,
+  .video-list-section {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .video-list-section {
+    max-height: 300px;
+  }
+
+  .enroll-btn {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .logo-text {
+    max-width: 120px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .logo-img {
+    margin-right: 0;
+  }
+
+  .logo-text {
+    white-space: normal;
+    max-width: 100%;
+    font-size: 0.95rem;
+  }
+}
+  @media (max-width: 768px) {
+  .menu-hidden .search-bar-container,
+  .menu-hidden .nav-buttons {
+    display: none;
+  }
+
+  .menu-visible {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .menu-visible .topmenu-left,
+  .menu-visible .search-bar-container,
+  .menu-visible .nav-buttons {
+    display: flex;
+  }
+}
       `}</style>
       <div className="page-wrapper">
         <TopMenuBar userName={courseData.userName} />
@@ -655,6 +796,7 @@ export default function CoursePage() {
             aria-label="Course videos list"
             role="list"
           >
+            {/* Add a progress meter here to indicate course completion */}
             <div className="video-list-heading">Course Videos</div>
             {courseData.videos.map((video) => (
               <button
