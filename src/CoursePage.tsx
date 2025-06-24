@@ -1,6 +1,7 @@
 import { useState } from "react";
 import logo from "./images/maestrominds-300x300.jpg";
 import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 const courseData = {
   title: "Mastering Modern Web Development",
@@ -226,32 +227,54 @@ const TopMenuBar = (_props: TopMenuBarProps) => {
         ☰
       </button>
 
-      <header className={`topmenu ${menuOpen ? 'menu-visible' : 'menu-hidden'}`}>
-        <div className="topmenu-left">
-          <div className="logo">
-            <img src={logo} alt="Maestrominds logo" className="logo-img" />
-            <span className="logo-text">Maestrominds Learning Hub</span>
-          </div>
-          <div className="search-bar-container">
-            <input
-              type="search"
-              className="search-bar"
-              placeholder="🔍 Search courses"
-            />
+      <header
+        className={`topmenu ${menuOpen ? "menu-visible" : "menu-hidden"}`}
+      >
+        {/* Left spacer for sidebar button */}
+        <div className="menu-side-placeholder" />
+
+        {/* Centered content */}
+        <div className="topmenu-center">
+          
+            <div className="logo">
+              <img src={logo} alt="Logo" className="logo-img" />
+              <div className="logo-text-container">
+                <div className="logo-text-line1">Maestrominds Learning Hub</div>
+              </div>
+            </div>
+
+            {/* <div className="search-bar-container">
+              <input
+                type="search"
+                className="search-bar"
+                placeholder="🔍 Search"
+              />
+            </div> */}
+          
+
+          <div className="nav-buttons">
+            <button
+              className="nav-button"
+              onClick={() => navigate("/all-courses")}
+            >
+              All Courses
+            </button>
+            <button className="nav-button">My Courses</button>
+            <button className="nav-button add-course"> + Add Course</button>
           </div>
         </div>
 
-        <div className="nav-buttons">
-          <button className="nav-button" onClick={() => navigate("/all-courses")}>All Courses</button>
-          <button className="nav-button">My Courses</button>
-          <button className="nav-button add-course">+ Add Course</button>
-        </div>
+        {/* Right spacer for profile button */}
+        <div className="menu-side-placeholder" />
       </header>
     </>
   );
 };
 
 export default function CoursePage() {
+  const { id } = useParams();
+  console.log("Course ID from URL:", id);
+
   const [currentVideoId, setCurrentVideoId] = useState(courseData.videos[0].id);
 
   const currentVideo = courseData.videos.find((v) => v.id === currentVideoId)!;
@@ -259,7 +282,8 @@ export default function CoursePage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
 /* ===== Base Reset ===== */
 * {
   box-sizing: border-box;
@@ -335,31 +359,38 @@ main {
   gap: 12px;
 }
 
-.topmenu-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
+.menu-side-placeholder {
+  width: 40px;
+  height: 1px;
+  flex-shrink: 0;
 }
 
-.search-bar-container {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-}
-
-.nav-buttons {
+.topmenu-center {
   display: flex;
   align-items: center;
-  gap: 12px;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  flex: 1;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.branding-search {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-right: auto;
 }
 
 .logo-img {
@@ -371,24 +402,36 @@ main {
   box-shadow: 0 2px 8px rgba(90, 56, 30, 0.1);
 }
 
-.logo-text {
-  font-weight: 700;
-  font-family: 'Poppins', sans-serif;
-  color: #5a381e;
-  user-select: none;
-  letter-spacing: 0.01em;
-  white-space: normal;
-  word-break: break-word;
-  overflow: visible;
-  text-overflow: unset;
+.logo-text-container {
+  display: flex;
+  flex-direction: column;
   max-width: none;
-  line-height: 1.2;
-  font-size: 0.95rem;
+}
+
+.logo-text-line1 {
+  font-weight: 700;
+  font-size: 1rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.logo-text-line2 {
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.1;
+  color: #865c30;
+  white-space: nowrap;
+}
+
+/* .search-bar-container {
+  flex: 0 1 200px;
+  max-width: 250px;
+  display: flex;
+  justify-content: center;
 }
 
 .search-bar {
   width: 100%;
-  max-width: 300px;
   padding: 8px;
   border: 1px solid #d9cabb;
   border-radius: 8px;
@@ -407,6 +450,14 @@ main {
   border-color: #bc6c25;
   box-shadow: 0 0 0 3px rgba(188, 108, 37, 0.3);
   background-color: #fff9f0;
+} */
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .nav-button {
@@ -445,50 +496,143 @@ main {
 }
 
 @media (max-width: 768px) {
-  .logo-text {
-    font-size: clamp(1rem, 2.5vw, 1.3rem);
-    max-width: 100%;
-  }
-
-  .hamburger-btn {
-    display: block;
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    z-index: 999;
-    font-size: 1.5rem;
-    background: none;
-    border: none;
-    color: #5a381e;
-  }
-
   .topmenu {
-    flex-direction: column;
-    align-items: flex-start;
+    /* Adjust topmenu for mobile */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center items horizontally */
+    padding: 12px 30px 50px; /* Add some padding */
+    min-height: auto; /* Allow height to adjust */
+    justify-content: flex-start; /* Align content to the start */
+    /* Ensure it's always a flex container for its direct children */
+    display: flex;
   }
 
-  .topmenu-left {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    width: 100%;
+  /* This div is the direct child of .topmenu that contains logo/text and nav buttons */
+  .topmenu-center {
+    flex-direction: column; /* Default to column for stacking */
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    word-break: break-word;
+    width: 100%; /* Take full width */
+    /* Ensure it's always a flex container */
+    display: flex;
   }
 
-  .search-bar-container,
-  .nav-buttons {
-    width: 100%;
+  /* The .logo element itself contains the image and the text container */
+  .logo {
+    display: flex; /* Always display logo and text side-by-side */
+    flex-direction: row; /* Keep logo image and text in a row */
+    align-items: center;
+    justify-content: center; /* Center logo and text within their container */
+    flex-wrap: nowrap; /* Prevent wrapping for logo and text */
+    white-space: nowrap;
+    margin: 0; /* Remove auto margin that might push it */
+    width: 100%; /* Ensure it takes available width to center */
+  }
+
+  .logo-text-container {
+    display: flex; /* ALWAYS display the text container in mobile */
+    flex-direction: column; /* Stack text lines */
+    align-items: flex-start; /* Align text to the start within its container */
+    margin-left: 8px; /* Space between logo image and text */
+  }
+
+  .logo-text-line1 {
+    font-size: 1rem; /* Ensure readable size */
+    white-space: nowrap; /* Keep text on one line if possible */
+    text-align: left; /* Align text to the left */
+  }
+
+  /* Hide nav buttons when menu is hidden */
+  .menu-hidden .nav-buttons {
+    display: none;
+  }
+
+  /* Show nav buttons when menu is visible */
+  .menu-visible .nav-buttons {
+    display: flex;
+    flex-direction: column; /* Stack buttons vertically */
+    width: 100%; /* Take full width */
+    gap: 8px; /* Space between buttons */
+    margin-top: 12px; /* Add some space above buttons when expanded */
   }
 
   .nav-button {
     width: 100%;
-    text-align: left;
-    padding-left: 0;
+    text-align: center;
   }
+
+  .hamburger-btn {
+    display: block;
+    position: absolute; /* Position relative to topmenu */
+    top: 16px;
+    right: 16px;
+    z-index: 999; /* Ensure it's above other content */
+    font-size: 1.5rem;
+    background: none;
+    border: none; 
+    color: #5a381e;
+  }
+
+  /* Adjust topmenu height based on menu state */
+  .topmenu.menu-hidden {
+    height: 80px; /* Fixed height for minimized state (logo + padding) */
+    overflow: hidden; /* Hide overflowing content */
+    /* Ensure topmenu-center is centered vertically within the fixed height */
+    justify-content: center;
+  }
+
+  .topmenu.menu-visible {
+    height: auto; /* Auto height for expanded state */
+    overflow: visible; /* Show all content */
+    justify-content: flex-start; /* Align content to the start */
+  }
+
+  /* Ensure the .topmenu-center correctly positions its children */
+  .menu-hidden .topmenu-center {
+    flex-direction: row; /* Keep logo and text in a row */
+    justify-content: center; /* Center logo and text */
+    align-items: center;
+    height: 100%; /* Take full height of the minimized topmenu */
+  }
+
+  .menu-visible .topmenu-center {
+    flex-direction: column; /* Stack logo/text and nav buttons */
+    justify-content: flex-start; /* Align content to the start */
+    align-items: center;
+  }
+
+  /* Remove the display:none from logo-text-container that was previously here */
+  /* .logo-text-container { display: none; } */
+  /* .menu-visible .logo-text-container { display: flex; } */
+
+  /* Remove the redundant media query at the very end if it exists */
+  /*
+  @media (max-width: 768px) {
+    .menu-hidden .search-bar-container,
+    .menu-hidden .nav-buttons {
+      display: none;
+    }
+
+    .menu-visible {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .menu-visible .topmenu-left,
+    .menu-visible .search-bar-container,
+    .menu-visible .nav-buttons {
+      display: flex;
+    }
+  }
+  */
 }
 
 
 
-
+/* Retain your other section styles (videos, course info, etc.) as they were. */
 
 /* ===== Video Section ===== */
 .video-wrapper {
