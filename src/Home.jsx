@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import Header from '../components/Header'
-import EnrolledCourseCard from '../components/EnrolledCourseCard'
-import CourseCard from '../components/CourseCard'
-import AddCourseModal from '../components/AddCourseModal'
+import Header from './LandingPage/source/components/Header'
+import EnrolledCourseCard from './EnrolledCourseCard'
+import CourseCard from './CourseCard'
+import AddCourseModal from './AddCourseModal'
 import { coursesData } from '../data'
 
 const Home = () => {

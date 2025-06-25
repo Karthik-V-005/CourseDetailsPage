@@ -582,9 +582,16 @@ function App() {
                             <p className="instructor">By {course.instructor}</p>
                             <p className="description">{course.description}</p>
                             <div className="course-actions">
-                              <button className="continue-btn">
+                              <button
+                                className="continue-btn"
+                                onClick={() => {
+                                  console.log("Navigating to:", course.id);
+                                  navigate(`/course/${course.id}`);
+                                }}
+                              >
                                 Continue Learning
                               </button>
+
                               <button
                                 className="unenroll-btn"
                                 onClick={() =>
@@ -616,10 +623,7 @@ function App() {
               </div>
               <div className="courses-grid">
                 {filteredCourses.map((course) => (
-                  <div
-                    key={`course-${course.id}`}
-                    className="course-card"
-                  >
+                  <div key={`course-${course.id}`} className="course-card">
                     <div className="card-media">
                       <img
                         src={course.thumbnail}
@@ -650,9 +654,7 @@ function App() {
                             isEnrolled(course.id) ? "enrolled" : ""
                           }`}
                           onClick={() => {
-                            if (isEnrolled(course.id)) {
-                              navigate(`/course/${course.id}`);
-                            } else {
+                            if (!isEnrolled(course.id)) {
                               handleEnrollCourse(course.id);
                             }
                           }}
@@ -722,9 +724,16 @@ function App() {
                         </div>
                         <p className="description">{course.description}</p>
                         <div className="card-actions">
-                          <button className="continue-btn">
+                          <button
+                            className="continue-btn"
+                            onClick={() => {
+                              console.log("Navigating to:", course.id);
+                              navigate(`/course/${course.id}`);
+                            }}
+                          >
                             Continue Learning
                           </button>
+
                           <button
                             className="unenroll-btn"
                             onClick={() => handleUnenrollCourse(course.id)}
