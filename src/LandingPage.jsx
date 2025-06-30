@@ -1,226 +1,209 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  setDoc,
+  doc,
+} from "firebase/firestore";
+import { useNavigate, Routes, Route } from "react-router-dom";
+import { db } from "./FirebaseAuth";
+import CoursePage from "./CoursePage";
 import "./index.css";
 
-function App() {
+function LandingPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const navigate = useNavigate();
   const [newCourse, setNewCourse] = useState({
     name: "",
     category: "",
     description: "",
     level: "Beginner",
-    thumbnailFile: null,
+    instructor: "",
+    thumbnailUrl: "",
     sections: [
       {
         title: "",
-        videos: [
-          {
-            title: "",
-            videoUrl: "",
-            duration: "",
-          },
-        ],
+        videos: [{ title: "", videoUrl: "", duration: "" }],
       },
     ],
   });
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
-  const thumbnailInputRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
-  const [editingSectionIndex, setEditingSectionIndex] = useState(null);
+  const navigate = useNavigate();
 
-  // Fetch data from backend
   useEffect(() => {
-    /* const fetchData = async () => {
+    const fetchData = async () => {
       try {
-        const coursesRes = await fetch("/api/courses");
-        const coursesData = await coursesRes.json();
-
-        const enrollRes = await fetch("/api/enrollments");
-        const enrollData = await enrollRes.json();
-
+        const coursesSnapshot = await getDocs(collection(db, "allcourses"));
+        const coursesData = coursesSnapshot.docs.map((doc) => ({
+          id: doc.data().id,
+          ...doc.data(),
+        }));
         setAllCourses(coursesData);
+
+        const enrollSnapshot = await getDocs(collection(db, "enrollments"));
+        const enrollData = enrollSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setEnrolledCourses(enrollData);
       } catch (error) {
         console.error("Fetch error:", error);
       }
     };
 
-    fetchData(); */
-    const mockCourses = [
-      {
-        id: "demo",
-        name: "React Basics",
-        category: "Web Development",
-        description: "Learn React fundamentals.",
-        thumbnail: "https://placehold.co/300x200",
-        level: "Beginner",
-        duration: "4h",
-        instructor: "Jane Doe",
-      },
-      {
-        id: "test2",
-        name: "Intro to CSS",
-        category: "Design",
-        description: "Style modern websites with CSS.",
-        thumbnail: "https://placehold.co/300x200?text=CSS",
-        level: "Beginner",
-        duration: "3h",
-        instructor: "John Smith",
-      },
-    ];
-
-    const mockEnrollments = [
-      {
-        id: "enroll1",
-        courseId: "demo",
-        progress: 40,
-      },
-    ];
-
-    setAllCourses(mockCourses);
-    setEnrolledCourses(mockEnrollments);
+    fetchData();
   }, []);
 
-  // Section and Video Management
-  const addSection = () => {
-    setNewCourse({
-      ...newCourse,
-      sections: [
-        ...newCourse.sections,
-        {
-          title: "",
-          videos: [{ title: "", videoUrl: "", duration: "" }],
-        },
-      ],
-    });
-    setEditingSectionIndex(newCourse.sections.length);
-  };
-
-  const updateSectionTitle = (index, title) => {
-    const updatedSections = [...newCourse.sections];
-    updatedSections[index].title = title;
-    setNewCourse({ ...newCourse, sections: updatedSections });
-  };
-
-  const addVideoToSection = (sectionIndex) => {
-    const updatedSections = [...newCourse.sections];
-    updatedSections[sectionIndex].videos.push({
-      title: "",
-      videoUrl: "",
-      duration: "",
-    });
-    setNewCourse({ ...newCourse, sections: updatedSections });
-  };
-
-  const handleVideoUrlChange = (sectionIndex, videoIndex, url) => {
-    const updatedSections = [...newCourse.sections];
-    updatedSections[sectionIndex].videos[videoIndex].videoUrl = url;
-    setNewCourse({ ...newCourse, sections: updatedSections });
-  };
-
-  const removeSection = (index) => {
-    const updatedSections = [...newCourse.sections];
-    updatedSections.splice(index, 1);
-    setNewCourse({ ...newCourse, sections: updatedSections });
-  };
-
-  const removeVideoFromSection = (sectionIndex, videoIndex) => {
-    const updatedSections = [...newCourse.sections];
-    updatedSections[sectionIndex].videos.splice(videoIndex, 1);
-    setNewCourse({ ...newCourse, sections: updatedSections });
-  };
-
-  // Course Management
-  const handleAddCourse = async () => {
-    if (!newCourse.name || !newCourse.category || !newCourse.description) {
-      alert("Please fill all required fields");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("name", newCourse.name);
-    formData.append("category", newCourse.category);
-    formData.append("description", newCourse.description);
-    formData.append("level", newCourse.level);
-
-    if (newCourse.thumbnailFile) {
-      formData.append("thumbnail", newCourse.thumbnailFile);
-    }
-
-    newCourse.sections.forEach((section, sectionIndex) => {
-      formData.append(`sections[${sectionIndex}][title]`, section.title);
-      section.videos.forEach((video, videoIndex) => {
-        formData.append(
-          `sections[${sectionIndex}][videos][${videoIndex}][videoUrl]`,
-          video.videoUrl
-        );
-        formData.append(
-          `sections[${sectionIndex}][videos][${videoIndex}][title]`,
-          video.title
-        );
-        formData.append(
-          `sections[${sectionIndex}][videos][${videoIndex}][duration]`,
-          video.duration
-        );
-      });
-    });
-
+  const handleEnrollCourse = async (courseId) => {
     try {
-      const response = await fetch("/api/courses", {
-        method: "POST",
-        body: formData,
+      const docRef = await addDoc(collection(db, "enrollments"), {
+        courseId,
+        isEnrolled: true,
+        progress: 0,
       });
-      const data = await response.json();
-      setAllCourses([...allCourses, data]);
+      setEnrolledCourses([
+        ...enrolledCourses,
+        { id: docRef.id, courseId, progress: 0 },
+      ]);
+    } catch (error) {
+      console.error("Error enrolling:", error);
+    }
+  };
+
+  const handleAddCourse = async () => {
+    try {
+      const courseId = newCourse.name.toLowerCase().replace(/\s+/g, "_");
+
+      // 1. Add to allcourses collection
+      await addDoc(collection(db, "allcourses"), {
+        id: courseId,
+        name: newCourse.name,
+        category: newCourse.category,
+        description: newCourse.description,
+        level: newCourse.level,
+        instructor: newCourse.instructor,
+        thumbnailUrl: newCourse.thumbnailUrl,
+        isEnrolled: false,
+        progress: 0,
+      });
+
+      // 2. Create courseId collection and add metadata doc
+      await setDoc(doc(db, courseId, "metadata"), {
+        CourseName: newCourse.name,
+        CourseDesc: newCourse.description,
+        Instructor: newCourse.instructor,
+        ThumbnailUrl: newCourse.thumbnailUrl,
+        Level: newCourse.level,
+        Category: newCourse.category,
+        Sections: newCourse.sections,
+      });
+
+      // 3. Add videos as msth_video_#
+      let videoCount = 1;
+      for (const section of newCourse.sections) {
+        for (const video of section.videos) {
+          const videoID = video.videoUrl.slice(-11);
+          const videoDocId = `msth_video_${videoCount}`;
+          await setDoc(doc(db, courseId, videoDocId), {
+            videoID,
+          });
+          videoCount++;
+        }
+      }
+
+      alert("Course added successfully!");
       setShowAddForm(false);
       setNewCourse({
         name: "",
         category: "",
         description: "",
         level: "Beginner",
-        thumbnailFile: null,
-        sections: [],
+        instructor: "",
+        thumbnailUrl: "",
+        sections: [
+          {
+            title: "",
+            videos: [{ title: "", videoUrl: "", duration: "" }],
+          },
+        ],
       });
     } catch (error) {
-      console.error("Error creating course:", error);
+      console.error("Error adding course:", error);
+      alert("Failed to add course.");
     }
   };
 
-  // Enrollment Management
-  const handleEnrollCourse = async (courseId) => {
+  const updateSectionTitle = (index, title) => {
+    const updated = [...newCourse.sections];
+    updated[index].title = title;
+    setNewCourse({ ...newCourse, sections: updated });
+  };
+
+  const removeSection = (index) => {
+    const updated = [...newCourse.sections];
+    updated.splice(index, 1);
+    setNewCourse({ ...newCourse, sections: updated });
+  };
+
+  const removeVideoFromSection = (sectionIndex, videoIndex) => {
+    const updated = [...newCourse.sections];
+    updated[sectionIndex].videos.splice(videoIndex, 1);
+    setNewCourse({ ...newCourse, sections: updated });
+  };
+
+  const handleVideoUrlChange = (sectionIndex, videoIndex, url) => {
+    const updated = [...newCourse.sections];
+    updated[sectionIndex].videos[videoIndex].videoUrl = url;
+    setNewCourse({ ...newCourse, sections: updated });
+  };
+
+  const addVideoToSection = (sectionIndex) => {
+    const updated = [...newCourse.sections];
+    updated[sectionIndex].videos.push({
+      title: "",
+      videoUrl: "",
+      duration: "",
+    });
+    setNewCourse({ ...newCourse, sections: updated });
+  };
+
+  const addSection = () => {
+    setNewCourse({
+      ...newCourse,
+      sections: [...newCourse.sections, { title: "", videos: [] }],
+    });
+  };
+
+  const updateProgress = async (enrollmentId, newProgress) => {
     try {
-      const response = await fetch("/api/enrollments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ courseId }),
+      const enrollmentRef = doc(db, "enrollments", enrollmentId);
+      await updateDoc(enrollmentRef, {
+        progress: newProgress,
       });
-      const data = await response.json();
-      setEnrolledCourses([...enrolledCourses, data]);
+      console.log("Progress updated to", newProgress);
     } catch (error) {
-      console.error("Error enrolling:", error);
+      console.error("Failed to update progress:", error);
     }
   };
 
   const handleUnenrollCourse = async (courseId) => {
     try {
-      await fetch(`/api/enrollments/${courseId}`, {
-        method: "DELETE",
-      });
-      setEnrolledCourses(
-        enrolledCourses.filter((ec) => ec.courseId !== courseId)
-      );
+      const toDelete = enrolledCourses.find((e) => e.courseId === courseId);
+      if (toDelete) {
+        await deleteDoc(doc(db, "enrollments", toDelete.id));
+        setEnrolledCourses(enrolledCourses.filter((e) => e.id !== toDelete.id));
+      }
     } catch (error) {
       console.error("Error unenrolling:", error);
     }
   };
 
-  // Search and Filter
   const filteredCourses = allCourses.filter((course) => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
@@ -240,7 +223,6 @@ function App() {
     return enrolledCourses.some((ec) => ec.courseId === courseId);
   };
 
-  // UI Helpers
   const scrollLeft = () => {
     scrollContainerRef.current?.scrollBy({ left: -300, behavior: "smooth" });
   };
@@ -250,514 +232,578 @@ function App() {
   };
 
   return (
-    <div className="learning-platform">
-      <header className="platform-header">
-        <div className="header-content">
-          <div className="branding">
-            <img
-              src="/logo.png"
-              alt="Maestrominds Logo"
-              className="logo"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = "https://placehold.co/40x40?text=MM";
-              }}
-            />
-            <div className="branding-text">
-              <h1>Maestrominds</h1>
-              <p className="subtitle">Learning Platform</p>
-            </div>
-          </div>
-          <div className="header-actions">
-            <div className="search-bar">
-              <input
-                type="text"
-                placeholder={`Search ${
-                  activeTab === "all" ? "all" : "my"
-                } courses...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <i className="search-icon">🔍</i>
-            </div>
-
-            <div className="nav-tabs">
-              <button
-                className={`tab-btn ${activeTab === "all" ? "active" : ""}`}
-                onClick={() => setActiveTab("all")}
-              >
-                All Courses
-              </button>
-              <button
-                className={`tab-btn ${
-                  activeTab === "enrolled" ? "active" : ""
-                }`}
-                onClick={() => setActiveTab("enrolled")}
-              >
-                My Courses
-              </button>
-            </div>
-
-            <button
-              className="add-course-btn"
-              onClick={() => setShowAddForm(!showAddForm)}
-            >
-              + Add Course
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="platform-main">
-        {showAddForm && (
-          <div className="course-form-container">
-            <div className="course-form">
-              <h2>Create New Course</h2>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Course Title*</label>
-                  <input
-                    type="text"
-                    value={newCourse.name}
-                    onChange={(e) =>
-                      setNewCourse({ ...newCourse, name: e.target.value })
-                    }
-                    placeholder="e.g. Advanced React"
-                    required
+    <Routes>
+      <Route
+        path="/"
+        element={
+          <div className="learning-platform">
+            {/* ⬇️ HEADER SECTION */}
+            <header className="platform-header">
+              <div className="header-content">
+                <div className="branding">
+                  <img
+                    src="/logo.png"
+                    alt="Maestrominds Logo"
+                    className="logo"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://placehold.co/40x40?text=MM";
+                    }}
                   />
+                  <div className="branding-text">
+                    <h1>Maestro hub</h1>
+                    <p className="subtitle">Learning Platform</p>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Category*</label>
-                  <input
-                    type="text"
-                    value={newCourse.category}
-                    onChange={(e) =>
-                      setNewCourse({ ...newCourse, category: e.target.value })
-                    }
-                    placeholder="e.g. Web Development"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Level*</label>
-                  <select
-                    value={newCourse.level}
-                    onChange={(e) =>
-                      setNewCourse({ ...newCourse, level: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-                </div>
-                <div className="form-group span-2">
-                  <label>Description*</label>
-                  <textarea
-                    value={newCourse.description}
-                    onChange={(e) =>
-                      setNewCourse({
-                        ...newCourse,
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="Course description..."
-                    rows="4"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Thumbnail Image*</label>
-                  <div className="file-upload">
-                    <button
-                      type="button"
-                      onClick={() => thumbnailInputRef.current.click()}
-                    >
-                      {newCourse.thumbnailFile
-                        ? newCourse.thumbnailFile.name
-                        : "Choose Thumbnail"}
-                    </button>
+                <div className="header-actions">
+                  <div className="search-bar">
                     <input
-                      type="file"
-                      ref={thumbnailInputRef}
-                      onChange={(e) =>
-                        setNewCourse({
-                          ...newCourse,
-                          thumbnailFile: e.target.files[0],
-                        })
-                      }
-                      accept="image/*"
-                      style={{ display: "none" }}
-                      required
+                      type="text"
+                      placeholder={`Search ${
+                        activeTab === "all" ? "all" : "my"
+                      } courses...`}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                    <i className="search-icon">🔍</i>
                   </div>
-                </div>
 
-                <div className="form-group span-2">
-                  <label>Course Sections & Videos</label>
-                  <div className="sections-container">
-                    {newCourse.sections.length === 0 ? (
-                      <p className="no-sections">No sections added yet</p>
-                    ) : (
-                      newCourse.sections.map((section, sectionIndex) => (
-                        <div
-                          key={`section-${sectionIndex}`}
-                          className="section-card"
-                        >
-                          <div className="section-header">
-                            <input
-                              type="text"
-                              value={section.title}
-                              onChange={(e) =>
-                                updateSectionTitle(sectionIndex, e.target.value)
-                              }
-                              placeholder="Section title"
-                              className="section-title-input"
-                            />
-                            <button
-                              className="section-remove-btn"
-                              onClick={() => removeSection(sectionIndex)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-
-                          <div className="videos-container">
-                            {section.videos.map((video, videoIndex) => (
-                              <div
-                                key={`video-${sectionIndex}-${videoIndex}`}
-                                className="video-input-group"
-                              >
-                                <input
-                                  type="text"
-                                  value={video.title}
-                                  onChange={(e) => {
-                                    const updatedSections = [
-                                      ...newCourse.sections,
-                                    ];
-                                    updatedSections[sectionIndex].videos[
-                                      videoIndex
-                                    ].title = e.target.value;
-                                    setNewCourse({
-                                      ...newCourse,
-                                      sections: updatedSections,
-                                    });
-                                  }}
-                                  placeholder={`Video ${sectionIndex + 1}.${
-                                    videoIndex + 1
-                                  } Title`}
-                                />
-
-                                <input
-                                  type="url"
-                                  value={video.videoUrl}
-                                  onChange={(e) =>
-                                    handleVideoUrlChange(
-                                      sectionIndex,
-                                      videoIndex,
-                                      e.target.value
-                                    )
-                                  }
-                                  placeholder="https://example.com/video"
-                                  pattern="https://.*"
-                                  required
-                                />
-
-                                <input
-                                  type="text"
-                                  value={video.duration}
-                                  onChange={(e) => {
-                                    const updatedSections = [
-                                      ...newCourse.sections,
-                                    ];
-                                    updatedSections[sectionIndex].videos[
-                                      videoIndex
-                                    ].duration = e.target.value;
-                                    setNewCourse({
-                                      ...newCourse,
-                                      sections: updatedSections,
-                                    });
-                                  }}
-                                  placeholder="Duration (e.g. 10:30)"
-                                />
-
-                                <button
-                                  className="remove-video-btn"
-                                  onClick={() =>
-                                    removeVideoFromSection(
-                                      sectionIndex,
-                                      videoIndex
-                                    )
-                                  }
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            ))}
-                            <button
-                              className="add-video-btn"
-                              onClick={() => addVideoToSection(sectionIndex)}
-                            >
-                              + Add Video
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                    <button className="add-section-btn" onClick={addSection}>
-                      + Add Section
+                  <div className="nav-tabs">
+                    <button
+                      className={`tab-btn ${
+                        activeTab === "all" ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTab("all")}
+                    >
+                      All Courses
+                    </button>
+                    <button
+                      className={`tab-btn ${
+                        activeTab === "enrolled" ? "active" : ""
+                      }`}
+                      onClick={() => setActiveTab("enrolled")}
+                    >
+                      My Courses
                     </button>
                   </div>
-                </div>
-              </div>
-              <div className="form-actions">
-                <button
-                  className="secondary-btn"
-                  onClick={() => setShowAddForm(false)}
-                >
-                  Cancel
-                </button>
-                <button className="primary-btn" onClick={handleAddCourse}>
-                  Create Course
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {activeTab === "all" && (
-          <>
-            {enrolledCourses.length > 0 && searchTerm === "" && (
-              <section className="enrolled-courses-section">
-                <div className="section-header">
-                  <h2>Continue Learning</h2>
-                  <p>Your enrolled courses</p>
-                </div>
-                <div className="scroll-container">
                   <button
-                    className="scroll-arrow left-arrow"
-                    onClick={scrollLeft}
+                    className="add-course-btn"
+                    onClick={() => setShowAddForm(!showAddForm)}
                   >
-                    &lt;
+                    + Add Course
                   </button>
-                  <div
-                    className="enrolled-courses-scroll"
-                    ref={scrollContainerRef}
-                  >
-                    {enrolledCourses.map((enrollment) => {
-                      const course = allCourses.find(
-                        (c) => c.id === enrollment.courseId
-                      );
-                      if (!course) return null;
+                </div>
+              </div>
+            </header>
+            {/* ⬆️ HEADER SECTION */}
 
-                      return (
-                        <div
-                          key={`enrolled-${enrollment.id}`}
-                          className="enrolled-course-card"
+            {/* ⬇️ MAIN SECTION */}
+
+            <main className="platform-main">
+              {showAddForm && (
+                <div className="course-form-container">
+                  <div className="course-form">
+                    <h2>Create New Course</h2>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Course Title*</label>
+                        <input
+                          type="text"
+                          value={newCourse.name}
+                          onChange={(e) =>
+                            setNewCourse({ ...newCourse, name: e.target.value })
+                          }
+                          placeholder="e.g. Advanced React"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Instructor Name*</label>
+                        <input
+                          type="text"
+                          value={newCourse.instructor}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              instructor: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. John Doe"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Thumbnail Image URL*</label>
+                        <input
+                          type="url"
+                          value={newCourse.thumbnailUrl}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              thumbnailUrl: e.target.value,
+                            })
+                          }
+                          placeholder="Paste image URL ending in .jpg or .png"
+                          pattern="https://.*\.(jpg|jpeg|png|webp)"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Category*</label>
+                        <input
+                          type="text"
+                          value={newCourse.category}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              category: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. Web Development"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Level*</label>
+                        <select
+                          value={newCourse.level}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              level: e.target.value,
+                            })
+                          }
+                          required
                         >
-                          <div className="course-media">
+                          <option value="Beginner">Beginner</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Advanced">Advanced</option>
+                        </select>
+                      </div>
+                      <div className="form-group span-2">
+                        <label>Description*</label>
+                        <textarea
+                          value={newCourse.description}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="Course description..."
+                          rows="4"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group span-2">
+                        <label>Course Sections & Videos</label>
+                        <div className="sections-container">
+                          {newCourse.sections.length === 0 ? (
+                            <p className="no-sections">No sections added yet</p>
+                          ) : (
+                            newCourse.sections.map((section, sectionIndex) => (
+                              <div
+                                key={`section-${sectionIndex}`}
+                                className="section-card"
+                              >
+                                <div className="section-header">
+                                  <input
+                                    type="text"
+                                    value={section.title}
+                                    onChange={(e) =>
+                                      updateSectionTitle(
+                                        sectionIndex,
+                                        e.target.value
+                                      )
+                                    }
+                                    placeholder="Section title"
+                                    className="section-title-input"
+                                  />
+                                  <button
+                                    className="section-remove-btn"
+                                    onClick={() => removeSection(sectionIndex)}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+
+                                <div className="videos-container">
+                                  {section.videos.map((video, videoIndex) => (
+                                    <div
+                                      key={`video-${sectionIndex}-${videoIndex}`}
+                                      className="video-input-group"
+                                    >
+                                      <input
+                                        type="text"
+                                        value={video.title}
+                                        onChange={(e) => {
+                                          const updatedSections = [
+                                            ...newCourse.sections,
+                                          ];
+                                          updatedSections[sectionIndex].videos[
+                                            videoIndex
+                                          ].title = e.target.value;
+                                          setNewCourse({
+                                            ...newCourse,
+                                            sections: updatedSections,
+                                          });
+                                        }}
+                                        placeholder={`Video ${
+                                          sectionIndex + 1
+                                        }.${videoIndex + 1} Title`}
+                                      />
+
+                                      <input
+                                        type="url"
+                                        value={video.videoUrl}
+                                        onChange={(e) =>
+                                          handleVideoUrlChange(
+                                            sectionIndex,
+                                            videoIndex,
+                                            e.target.value
+                                          )
+                                        }
+                                        placeholder="https://example.com/video"
+                                        pattern="https://.*"
+                                        required
+                                      />
+
+                                      <input
+                                        type="text"
+                                        value={video.duration}
+                                        onChange={(e) => {
+                                          const updatedSections = [
+                                            ...newCourse.sections,
+                                          ];
+                                          updatedSections[sectionIndex].videos[
+                                            videoIndex
+                                          ].duration = e.target.value;
+                                          setNewCourse({
+                                            ...newCourse,
+                                            sections: updatedSections,
+                                          });
+                                        }}
+                                        placeholder="Duration (e.g. 10:30)"
+                                      />
+
+                                      <button
+                                        className="remove-video-btn"
+                                        onClick={() =>
+                                          removeVideoFromSection(
+                                            sectionIndex,
+                                            videoIndex
+                                          )
+                                        }
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button
+                                    className="add-video-btn"
+                                    onClick={() =>
+                                      addVideoToSection(sectionIndex)
+                                    }
+                                  >
+                                    + Add Video
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                          <button
+                            className="add-section-btn"
+                            onClick={addSection}
+                          >
+                            + Add Section
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        className="secondary-btn"
+                        onClick={() => setShowAddForm(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button className="primary-btn" onClick={handleAddCourse}>
+                        Create Course
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "all" && (
+                <>
+                  {enrolledCourses.length > 0 && searchTerm === "" && (
+                    <section className="enrolled-courses-section">
+                      <div className="section-header">
+                        <h2>Continue Learning</h2>
+                        <p>Your enrolled courses</p>
+                      </div>
+                      <div className="scroll-container">
+                        <button
+                          className="scroll-arrow left-arrow"
+                          onClick={scrollLeft}
+                        >
+                          &lt;
+                        </button>
+                        <div
+                          className="enrolled-courses-scroll"
+                          ref={scrollContainerRef}
+                        >
+                          {enrolledCourses.map((enrollment) => {
+                            const course = allCourses.find(
+                              (c) => c.id === enrollment.courseId
+                            );
+                            if (!course) return null;
+
+                            return (
+                              <div
+                                key={`enrolled-${enrollment.id}`}
+                                className="enrolled-course-card"
+                              >
+                                <div className="course-media">
+                                  <img
+                                    src={course.thumbnailUrl}
+                                    alt={course.name}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src =
+                                        "https://placehold.co/300x200?text=No+Image";
+                                    }}
+                                    style={{
+                                      width: "100%",
+                                      height: "180px",
+                                      objectFit: "cover",
+                                      borderRadius: "8px",
+                                    }}
+                                  />
+
+                                  <div className="progress-container">
+                                    <div className="progress-bar">
+                                      <div
+                                        className="progress-fill"
+                                        style={{
+                                          width: `${enrollment.progress}%`,
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <span>{enrollment.progress}% Complete</span>
+                                  </div>
+                                </div>
+                                <div className="course-details">
+                                  <h3>{course.name}</h3>
+                                  <p className="instructor">
+                                    By {course.instructor}
+                                  </p>
+                                  <p className="description">
+                                    {course.description}
+                                  </p>
+                                  <div className="course-actions">
+                                    <button className="continue-btn">
+                                      Continue Learning
+                                    </button>
+                                    <button
+                                      className="unenroll-btn"
+                                      onClick={() =>
+                                        handleUnenrollCourse(
+                                          enrollment.courseId
+                                        )
+                                      }
+                                    >
+                                      Unenroll
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          className="scroll-arrow right-arrow"
+                          onClick={scrollRight}
+                        >
+                          &gt;
+                        </button>
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="all-courses-section">
+                    <div className="section-header">
+                      <h2>Explore Our Courses</h2>
+                      <p>{allCourses.length} courses available</p>
+                    </div>
+                    <div className="courses-grid">
+                      {filteredCourses.map((course) => (
+                        <div
+                          key={`course-${course.id}`}
+                          className="course-card"
+                          onClick={() => navigate(`/course/${course.id}`)}
+                          style={{ cursor: "pointer" }}
+                        >
+                          <div className="card-media">
                             <img
-                              src={course.thumbnail}
+                              src={course.thumbnailUrl}
                               alt={course.name}
                               onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src =
-                                  "https://placehold.co/300x200?text=Course+Image";
+                                  "https://placehold.co/300x200?text=No+Image";
+                              }}
+                              style={{
+                                width: "100%",
+                                height: "180px",
+                                objectFit: "cover",
+                                borderRadius: "8px",
                               }}
                             />
-                            <div className="progress-container">
-                              <div className="progress-bar">
-                                <div
-                                  className="progress-fill"
-                                  style={{ width: `${enrollment.progress}%` }}
-                                ></div>
-                              </div>
-                              <span>{enrollment.progress}% Complete</span>
-                            </div>
-                          </div>
-                          <div className="course-details">
-                            <h3>{course.name}</h3>
-                            <p className="instructor">By {course.instructor}</p>
-                            <p className="description">{course.description}</p>
-                            <div className="course-actions">
-                              <button
-                                className="continue-btn"
-                                onClick={() => {
-                                  console.log("Navigating to:", course.id);
-                                  navigate(`/course/${course.id}`);
-                                }}
-                              >
-                                Continue Learning
-                              </button>
 
+                            {isEnrolled(course.id) && (
+                              <div className="enrolled-badge">Enrolled</div>
+                            )}
+                          </div>
+                          <div className="card-body">
+                            <div className="course-meta">
+                              <span className="category">
+                                {course.category || "General"}
+                              </span>
+                              <span className="duration">
+                                {course.duration}
+                              </span>
+                            </div>
+                            <h3>{course.name}</h3>
+                            <p className="description">{course.description}</p>
+                            <div className="card-actions">
                               <button
-                                className="unenroll-btn"
+                                className={`enroll-btn ${
+                                  isEnrolled(course.id) ? "enrolled" : ""
+                                }`}
                                 onClick={() =>
-                                  handleUnenrollCourse(enrollment.courseId)
+                                  isEnrolled(course.id)
+                                    ? null
+                                    : handleEnrollCourse(course.id)
                                 }
                               >
-                                Unenroll
+                                {isEnrolled(course.id)
+                                  ? "Continue"
+                                  : "Enroll Now"}
                               </button>
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                  <button
-                    className="scroll-arrow right-arrow"
-                    onClick={scrollRight}
-                  >
-                    &gt;
-                  </button>
-                </div>
-              </section>
-            )}
-
-            <section className="all-courses-section">
-              <div className="section-header">
-                <h2>Explore Our Courses</h2>
-                <p>{allCourses.length} courses available</p>
-              </div>
-              <div className="courses-grid">
-                {filteredCourses.map((course) => (
-                  <div key={`course-${course.id}`} className="course-card">
-                    <div className="card-media">
-                      <img
-                        src={course.thumbnail}
-                        alt={course.name}
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src =
-                            "https://placehold.co/300x200?text=Course+Image";
-                        }}
-                      />
-                      {isEnrolled(course.id) && (
-                        <div className="enrolled-badge">Enrolled</div>
-                      )}
+                      ))}
                     </div>
-                    <div className="card-body">
-                      <div className="course-meta">
-                        <span className="category">
-                          {course.category || "General"}
-                        </span>
-                        <span className="duration">{course.duration}</span>
-                      </div>
-                      <h3>{course.name}</h3>
-                      <p className="description">{course.description}</p>
-                      <div className="card-actions">
-                        <button
-                          className={`enroll-btn ${
-                            isEnrolled(course.id) ? "enrolled" : ""
-                          }`}
-                          onClick={() => {
-                            if (!isEnrolled(course.id)) {
-                              handleEnrollCourse(course.id);
-                            }
-                          }}
-                        >
-                          {isEnrolled(course.id) ? "Continue" : "Enroll Now"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </>
-        )}
-
-        {activeTab === "enrolled" && (
-          <section className="my-courses-vertical">
-            <div className="section-header">
-              <h2>My Courses</h2>
-              <p>
-                {searchTerm
-                  ? `Search results for "${searchTerm}"`
-                  : `Showing ${enrolledCourses.length} enrolled courses`}
-              </p>
-            </div>
-            <div className="vertical-courses-list">
-              {filteredCourses.length > 0 ? (
-                filteredCourses.map((course) => {
-                  const enrollment = enrolledCourses.find(
-                    (ec) => ec.courseId === course.id
-                  );
-                  if (!enrollment) return null;
-
-                  return (
-                    <div
-                      key={`mycourse-${course.id}`}
-                      className="vertical-course-card"
-                    >
-                      <div className="course-media">
-                        <img
-                          src={course.thumbnail}
-                          alt={course.name}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src =
-                              "https://placehold.co/300x200?text=Course+Image";
-                          }}
-                        />
-                        <div className="progress-container">
-                          <div className="progress-bar">
-                            <div
-                              className="progress-fill"
-                              style={{ width: `${enrollment.progress}%` }}
-                            ></div>
-                          </div>
-                          <span>{enrollment.progress}% Complete</span>
-                        </div>
-                      </div>
-                      <div className="course-details">
-                        <h3>{course.name}</h3>
-                        <div className="course-meta">
-                          <span className="instructor">
-                            By {course.instructor}
-                          </span>
-                          <span className="duration">{course.duration}</span>
-                          <span className="level">{course.level}</span>
-                        </div>
-                        <p className="description">{course.description}</p>
-                        <div className="card-actions">
-                          <button
-                            className="continue-btn"
-                            onClick={() => {
-                              console.log("Navigating to:", course.id);
-                              navigate(`/course/${course.id}`);
-                            }}
-                          >
-                            Continue Learning
-                          </button>
-
-                          <button
-                            className="unenroll-btn"
-                            onClick={() => handleUnenrollCourse(course.id)}
-                          >
-                            Unenroll
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="no-results">
-                  {searchTerm
-                    ? "No enrolled courses match your search"
-                    : "You have no enrolled courses yet"}
-                </div>
+                  </section>
+                </>
               )}
-            </div>
-          </section>
-        )}
-      </main>
-    </div>
+
+              {activeTab === "enrolled" && (
+                <section className="my-courses-vertical">
+                  <div className="section-header">
+                    <h2>My Courses</h2>
+                    <p>
+                      {searchTerm
+                        ? `Search results for "${searchTerm}"`
+                        : `Showing ${enrolledCourses.length} enrolled courses`}
+                    </p>
+                  </div>
+                  <div className="vertical-courses-list">
+                    {filteredCourses.length > 0 ? (
+                      filteredCourses.map((course) => {
+                        const enrollment = enrolledCourses.find(
+                          (ec) => ec.courseId === course.id
+                        );
+                        if (!enrollment) return null;
+
+                        return (
+                          <div
+                            key={`mycourse-${course.id}`}
+                            className="vertical-course-card"
+                          >
+                            <div className="course-media">
+                              <img
+                                src={course.thumbnailUrl}
+                                alt={course.name}
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src =
+                                    "https://placehold.co/300x200?text=No+Image";
+                                }}
+                                style={{
+                                  width: "100%",
+                                  height: "180px",
+                                  objectFit: "cover",
+                                  borderRadius: "8px",
+                                }}
+                              />
+
+                              <div className="progress-container">
+                                <div className="progress-bar">
+                                  <div
+                                    className="progress-fill"
+                                    style={{ width: `${enrollment.progress}%` }}
+                                  ></div>
+                                </div>
+                                <span>{enrollment.progress}% Complete</span>
+                              </div>
+                            </div>
+                            <div className="course-details">
+                              <h3>{course.name}</h3>
+                              <div className="course-meta">
+                                <span className="instructor">
+                                  By {course.instructor}
+                                </span>
+                                <span className="duration">
+                                  {course.duration}
+                                </span>
+                                <span className="level">{course.level}</span>
+                              </div>
+                              <p className="description">
+                                {course.description}
+                              </p>
+                              <div className="card-actions">
+                                <button className="continue-btn">
+                                  Continue Learning
+                                </button>
+                                <button
+                                  className="unenroll-btn"
+                                  onClick={() =>
+                                    handleUnenrollCourse(course.id)
+                                  }
+                                >
+                                  Unenroll
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="no-results">
+                        {searchTerm
+                          ? "No enrolled courses match your search"
+                          : "You have no enrolled courses yet"}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </main>
+          </div>
+        }
+      />
+
+      <Route path="/course/:id" element={<CoursePage />} />
+    </Routes>
   );
 }
 
-export default App;
+export default LandingPage;

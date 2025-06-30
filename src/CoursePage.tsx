@@ -2,69 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import app from "./FirebaseAuth";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import logo from "./LOGO.jpg"; 
+import { collection, getDocs, getFirestore } from "firebase/firestore";
+import logo from "./LOGO.jpg";
 import ReactPlayer from "react-player/youtube";
 
-const auth = getAuth(app);
 const db = getFirestore(app);
 
 const userRole: string = "Student";
 const isEnrolled = false;
 
-const videoList = [
-  {
-    id: 1,
-    title: "Introduction",
-    src: "https://www.w3schools.com/html/mov_bbb.mp4",
-  },
-  {
-    id: 2,
-    title: "Getting Started",
-    src: "https://www.w3schools.com/html/movie.mp4",
-  },
-  {
-    id: 3,
-    title: "Setting up Environment",
-    src: "https://www.w3schools.com/html/mov_bbb.mp4",
-  },
-  {
-    id: 4,
-    title: "JSX Basics",
-    src: "https://www.w3schools.com/html/movie.mp4",
-  },
-  {
-    id: 5,
-    title: "Props and State",
-    src: "https://www.w3schools.com/html/mov_bbb.mp4",
-  },
-  {
-    id: 6,
-    title: "Hooks Overview",
-    src: "https://www.w3schools.com/html/movie.mp4",
-  },
-  {
-    id: 7,
-    title: "Handling Events",
-    src: "https://www.w3schools.com/html/mov_bbb.mp4",
-  },
-  {
-    id: 8,
-    title: "Conditional Rendering",
-    src: "https://www.w3schools.com/html/movie.mp4",
-  },
-  {
-    id: 9,
-    title: "Fetching Data",
-    src: "https://www.w3schools.com/html/mov_bbb.mp4",
-  },
-  {
-    id: 10,
-    title: "Project: Todo App",
-    src: "https://www.w3schools.com/html/movie.mp4",
-  },
-];
+interface VideoItem {
+  title: string;
+  src: string;
+}
 
 export default function MaestroHub() {
   const [openSections, setOpenSections] = useState<{ [key: number]: boolean }>(
@@ -76,25 +26,53 @@ export default function MaestroHub() {
   };
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentVideoId, setCurrentVideoId] = useState(videoList[0].id);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [currentVideoId, setCurrentVideoId] = useState(0);
+  const [videoList, setVideoList] = useState<VideoItem[]>([]);
+  const [courseInfo, setCourseInfo] = useState<any>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
-
-  const currentVideo =
-    videoList.find((v) => v.id === currentVideoId)?.src || "";
+  const currentVideo = videoList[currentVideoId]?.src || "";
 
   useEffect(() => {
-    const resizeVideo = () => {
-      if (videoRef.current && listRef.current) {
-        const listHeight = listRef.current.offsetHeight;
-        videoRef.current.style.height = `${listHeight}px`;
+    const fetchCourseData = async () => {
+      const courseCollection = collection(db, "course1");
+      const snapshot = await getDocs(courseCollection);
+
+      const videos: any[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+
+        // Detect course info document
+        if (data.AboutInstructor) {
+          setCourseInfo(data);
+        } else {
+          Object.entries(data).forEach(([key, value]) => {
+            if (
+              key.toLowerCase().includes("video") &&
+              typeof value === "string"
+            ) {
+              videos.push({
+                title: key,
+                src: `https://www.youtube.com/watch?v=${value}`, // ✅ correct format
+              });
+            }
+          });
+        }
+      });
+
+      // Fill to 10 with placeholders
+      const totalVideos = [...videos];
+      while (totalVideos.length < 10) {
+        totalVideos.push({
+          title: `Placeholder ${totalVideos.length + 1}`,
+          src: "https://www.w3schools.com/html/mov_bbb.mp4", // placeholder
+        });
       }
+
+      setVideoList(totalVideos);
+      setCurrentVideoId(0);
     };
 
-    resizeVideo(); // initial match
-    window.addEventListener("resize", resizeVideo); // keep it synced
-
-    return () => window.removeEventListener("resize", resizeVideo);
+    fetchCourseData();
   }, []);
 
   return (
@@ -167,10 +145,10 @@ export default function MaestroHub() {
 }
         .video-player {
   width: 100%;
-  height: 400px;
+  aspect-ratio: 16 / 9;
   border: 1px solid #d1bfa7;
   border-radius: 1rem;
-  object-fit: cover;
+  overflow: hidden;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
           .video-player-container {
@@ -370,15 +348,17 @@ ul li {
 
       <div className="main-content">
         <div className="course-area">
-          <h2 className="course-title">React Mastery Course</h2>
+          <h2 className="course-title">{courseInfo?.CourseName || "Course"}</h2>
           <div className="course-content">
             <div className="video-player-container">
-              <video
-                className="video-player"
-                controls
-                src={currentVideo}
-                ref={videoRef}
-              />
+              <div className="video-player">
+                <ReactPlayer
+                  url={currentVideo}
+                  controls
+                  width="100%"
+                  height="100%"
+                />
+              </div>
             </div>
 
             <div
@@ -389,12 +369,12 @@ ul li {
             >
               <div className="video-list-heading">Course Videos</div>
               <div className="video-list-content">
-                {[...Array(8)].map((_, index) => {
+                {[...Array(5)].map((_, index) => {
                   const sectionNum = index + 1;
                   const isOpen = openSections[sectionNum] || false;
-                  const videosInSection = videoList.filter(
-                    (v) =>
-                      v.id >= (sectionNum - 1) * 2 + 1 && v.id <= sectionNum * 2
+                  const videosInSection = videoList.slice(
+                    (sectionNum - 1) * 2,
+                    sectionNum * 2
                   );
 
                   return (
@@ -410,18 +390,19 @@ ul li {
                       </button>
                       {isOpen && (
                         <div className="video-sublist">
-                          {videosInSection.map((video) => (
+                          {videosInSection.map((video, idx) => (
                             <button
-                              key={video.id}
+                              key={`${sectionNum}-${idx}`}
                               className={`video-list-item ${
-                                video.id === currentVideoId ? "active" : ""
+                                currentVideoId === (sectionNum - 1) * 2 + idx
+                                  ? "active"
+                                  : ""
                               }`}
-                              onClick={() => setCurrentVideoId(video.id)}
+                              onClick={() =>
+                                setCurrentVideoId((sectionNum - 1) * 2 + idx)
+                              }
                             >
-                              {`Video ${sectionNum}.${
-                                video.id - (sectionNum - 1) * 2
-                              }`}{" "}
-                              – {video.title}
+                              {`Video ${sectionNum}.${idx + 1}`} – {video.title}
                             </button>
                           ))}
                         </div>
@@ -440,10 +421,9 @@ ul li {
         <div className="card">
           <h2>Course Description</h2>
           <p>
-            This is a comprehensive course designed to take you from beginner to
-            advanced level in modern web development using React, TypeScript,
-            and more.
+            {courseInfo?.CourseDesc || "A detailed course on React concepts."}
           </p>
+
           {!isEnrolled && (
             <div className="enroll">
               <button>Enroll Now</button>
@@ -455,20 +435,19 @@ ul li {
           <h2>Course Details</h2>
           <ul>
             <li>
-              <strong>Difficulty:</strong> Intermediate
+              <strong>Difficulty:</strong> {courseInfo?.Difficulty}
             </li>
             <li>
-              <strong>Duration:</strong> 10 hours
+              <strong>Duration:</strong> {courseInfo?.Duration}
             </li>
             <li>
               <strong>Ratings:</strong> ⭐⭐⭐⭐☆
             </li>
             <li>
-              <strong>Instructor:</strong> Jane Doe
+              <strong>Instructor:</strong> {courseInfo?.Instructor}
             </li>
             <li>
-              <strong>About Instructor:</strong> Full-stack developer with 8+
-              years of experience.
+              <strong>About Instructor:</strong> {courseInfo?.AboutInstructor}
             </li>
           </ul>
         </div>

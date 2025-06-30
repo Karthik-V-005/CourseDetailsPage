@@ -1,43 +1,43 @@
-import { useState } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTimes } from '@fortawesome/free-solid-svg-icons'
+import { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
 const AddCourseModal = ({ onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
+    title: "",
+    description: "",
     thumbnailFile: null,
-    thumbnailPreview: null
-  })
+    thumbnailPreview: null,
+  });
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
-    })
-  }
+      [e.target.name]: e.target.value,
+    });
+  };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0]
+    const file = e.target.files[0];
     setFormData({
       ...formData,
       thumbnailFile: file,
-      thumbnailPreview: file ? URL.createObjectURL(file) : null
-    })
-  }
+      thumbnailPreview: file ? URL.createObjectURL(file) : null,
+    });
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     // Create FormData for submission
-    const form = new FormData()
-    form.append('title', formData.title)
-    form.append('description', formData.description)
+    const form = new FormData();
+    form.append("title", formData.title);
+    form.append("description", formData.description);
     if (formData.thumbnailFile) {
-      form.append('thumbnail', formData.thumbnailFile)
+      form.append("thumbnail", formData.thumbnailFile);
     }
 
-    onSubmit(form)
-  }
+    onSubmit(form);
+  };
 
   return (
     <div className="modal-overlay">
@@ -75,9 +75,9 @@ const AddCourseModal = ({ onClose, onSubmit }) => {
               required
             />
             {formData.thumbnailPreview && (
-              <img 
-                src={formData.thumbnailPreview} 
-                alt="Preview" 
+              <img
+                src={formData.thumbnailPreview}
+                alt="Preview"
                 className="thumbnail-preview"
               />
             )}
@@ -91,7 +91,7 @@ const AddCourseModal = ({ onClose, onSubmit }) => {
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AddCourseModal
+export default AddCourseModal;
