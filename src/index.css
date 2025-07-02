@@ -452,22 +452,6 @@ img {
   font-size: 0.9rem;
 }
 
-.continue-btn {
-  align-self: flex-start;
-  background-color: var(--primary);
-  color: var(--white);
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  transition: all 0.3s ease;
-}
-
-.continue-btn:hover {
-  background-color: var(--primary-dark);
-}
-
 /* All Courses Grid */
 .courses-grid {
   display: grid;
@@ -575,20 +559,67 @@ img {
   gap: var(--space-xs);
 }
 
-.enroll-btn {
-  flex: 1;
-  background-color: var(--primary);
-  color: var(--white);
-  border: none;
-  padding: 0.5rem;
-  border-radius: 4px;
-  font-weight: 500;
-  transition: all 0.3s ease;
+.course-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  max-width: 150px; /* Limit width to keep buttons compact */
 }
 
-.enroll-btn:hover {
-  background-color: var(--primary-dark);
+.continue-btn,
+.enroll-btn,
+.unenroll-btn {
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: 100%;
+  text-align: center;
 }
+
+.continue-btn,
+.enroll-btn {
+  background-color: hsla(21, 100%, 53%, 0.816);
+  color: white;
+}
+
+
+.enroll-btn:hover,
+.continue-btn:hover {
+  background-color: #e85a0c;
+}
+
+.unenroll-btn {
+  background-color: #8b4d3b;
+  color: white;
+}
+.unenroll-btn:hover {
+  background-color: #a45d48;
+}
+
+.delete-course-btn {
+  background-color: #b91c1c;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  border-radius: 0.4rem;
+  margin-top: 0.4rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.delete-course-btn:hover {
+  background-color: #991b1b;
+}
+
+
+
 
 /* ===== Responsive Styles ===== */
 @media (max-width: 992px) {

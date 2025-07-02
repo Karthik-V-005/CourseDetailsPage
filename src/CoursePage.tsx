@@ -1,19 +1,32 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import app from "./FirebaseAuth";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  getFirestore,
+  updateDoc,
+} from "firebase/firestore";
 import logo from "./LOGO.jpg";
 import ReactPlayer from "react-player/youtube";
+import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
+import Confetti from "react-confetti";
+import { useWindowSize } from "@react-hook/window-size";
 
 const db = getFirestore(app);
 
 const userRole: string = "Student";
-const isEnrolled = false;
 
 interface VideoItem {
   title: string;
   src: string;
+  section: string;
+  duration?: string;
+  thumbnail?: string;
 }
 
 export default function MaestroHub() {
@@ -31,52 +44,166 @@ export default function MaestroHub() {
   const [courseInfo, setCourseInfo] = useState<any>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const currentVideo = videoList[currentVideoId]?.src || "";
+  const [enrollSuccess, setEnrollSuccess] = useState(false); // <-- NEW
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [watchedVideoIds, setWatchedVideoIds] = useState<Set<number>>(
+    new Set()
+  );
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [width, height] = useWindowSize(); // for fullscreen confetti
+
+  const { id } = useParams();
+  const totalVideos = videoList.length;
+  const progressPercent = Math.round(
+    (watchedVideoIds.size / totalVideos) * 100
+  );
 
   useEffect(() => {
     const fetchCourseData = async () => {
-      const courseCollection = collection(db, "course1");
+      if (!id) return;
+
+      // Fetch course metadata and videos
+      const courseCollection = collection(db, id);
       const snapshot = await getDocs(courseCollection);
 
-      const videos: any[] = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-
-        // Detect course info document
-        if (data.AboutInstructor) {
+        if (docSnap.id === "metadata") {
           setCourseInfo(data);
-        } else {
-          Object.entries(data).forEach(([key, value]) => {
-            if (
-              key.toLowerCase().includes("video") &&
-              typeof value === "string"
-            ) {
-              videos.push({
-                title: key,
-                src: `https://www.youtube.com/watch?v=${value}`, // ✅ correct format
+
+          const sectionData = data.Sections || [];
+          const parsedVideos: any[] = [];
+
+          sectionData.forEach((section: any, sectionIndex: number) => {
+            const sectionTitle = section.title || `Section ${sectionIndex + 1}`;
+            (section.videos || []).forEach((vid: any, vidIndex: number) => {
+              parsedVideos.push({
+                title: vid.title || `Video ${vidIndex + 1}`,
+                section: sectionTitle,
+                src: vid.videoUrl || "",
+                thumbnail: vid.ThumbnailUrl,
               });
-            }
+            });
           });
+
+          setVideoList(parsedVideos);
+          setCurrentVideoId(0);
         }
       });
 
-      // Fill to 10 with placeholders
-      const totalVideos = [...videos];
-      while (totalVideos.length < 10) {
-        totalVideos.push({
-          title: `Placeholder ${totalVideos.length + 1}`,
-          src: "https://www.w3schools.com/html/mov_bbb.mp4", // placeholder
-        });
-      }
-
-      setVideoList(totalVideos);
-      setCurrentVideoId(0);
+      // 🔍 Check enrollment status
+      const enrollSnap = await getDocs(collection(db, "enrollments"));
+      const enrolled = enrollSnap.docs.some(
+        (doc) => doc.data().courseId === id
+      );
+      setIsEnrolled(enrolled);
     };
 
     fetchCourseData();
-  }, []);
+  }, [id]);
+  // ✅ re-run whenever course ID changes
+  const grouped = videoList.reduce((acc, video) => {
+    acc[video.section] = acc[video.section] || [];
+    acc[video.section].push(video);
+    return acc;
+  }, {} as Record<string, VideoItem[]>);
+
+  const handleEnroll = async () => {
+    if (!id) return;
+    try {
+      const docRef = await addDoc(collection(db, "enrollments"), {
+        courseId: id,
+        isEnrolled: true,
+        progress: 0,
+      });
+      console.log("Enrolled successfully:", docRef.id);
+      setIsEnrolled(true);
+      setEnrollSuccess(true); // <-- trigger message
+    } catch (error) {
+      console.error("Enrollment failed:", error);
+      alert("Failed to enroll. Please try again.");
+    }
+  };
+
+  const markCourseAsCompleted = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "enrollments"));
+      const match = snapshot.docs.find((doc) => doc.data().courseId === id);
+      if (!match) return;
+
+      const enrollmentRef = doc(db, "enrollments", match.id);
+      await updateDoc(enrollmentRef, {
+        progress: 100,
+        isCompleted: true,
+      });
+
+      console.log("✅ Course marked as completed");
+      setShowConfetti(true); // 🎉 trigger animation
+      setTimeout(() => setShowConfetti(false), 8000); // auto-hide after 8s
+    } catch (error) {
+      console.error("Error marking course as completed:", error);
+    }
+  };
+
+  const updateProgressInFirestore = async (progress: number) => {
+    try {
+      const snapshot = await getDocs(collection(db, "enrollments"));
+      const match = snapshot.docs.find((doc) => doc.data().courseId === id);
+      if (!match) return;
+
+      const enrollmentRef = doc(db, "enrollments", match.id);
+      await updateDoc(enrollmentRef, { progress });
+      console.log(`Progress updated to ${progress}%`);
+    } catch (err) {
+      console.error("Error updating progress:", err);
+    }
+  };
+
+  const handleVideoChange = async (index: number) => {
+    setCurrentVideoId(index);
+
+    if (!id || !isEnrolled) return;
+
+    // Avoid duplicate counts
+    setWatchedVideoIds((prevSet) => {
+      const newSet = new Set(prevSet);
+      newSet.add(index);
+
+      const newProgress = Math.round((newSet.size / totalVideos) * 100);
+
+      // Save progress to Firestore
+      updateProgressInFirestore(newProgress);
+
+      if (newSet.size === totalVideos) {
+        markCourseAsCompleted(); // ✅ New function to mark completion
+      }
+
+      return newSet;
+    });
+  };
 
   return (
     <div className="container">
+      {showConfetti && <Confetti width={width} height={height} />}
+      {showConfetti && (
+        <div
+          style={{
+            position: "fixed",
+            top: "20%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#fff",
+            padding: "1rem 2rem",
+            borderRadius: "1rem",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            fontSize: "1.5rem",
+            color: "#4CAF50",
+            zIndex: 1000,
+          }}
+        >
+          🎉 Congratulations! You completed the course!
+        </div>
+      )}
       <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap');
         body {
@@ -255,6 +382,7 @@ export default function MaestroHub() {
           margin-top: 1rem;
           text-align: center;
         }
+          
         .enroll button {
           background-color:hsl(21, 100.00%, 53.10%);
           color: white;
@@ -268,6 +396,17 @@ export default function MaestroHub() {
         .enroll button:hover {
           background-color: hsl(21, 100.00%, 48%);
         }
+          .enroll .enrolled-button {
+  background-color: #ccc !important;
+  cursor: not-allowed !important;
+  color: #333 !important;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0.75rem;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
         .hamburger-button {
           display: none;
         }
@@ -319,6 +458,8 @@ ul li {
             grid-template-columns: 1fr;
           }
         }
+          
+
       `}</style>
 
       {/* Menu Bar */}
@@ -329,7 +470,7 @@ ul li {
             alt="Maestro Hub Logo"
             className="logo-img"
           />
-          <span>Maestro Hub</span>
+          <span>MaestroHub</span>
         </Link>
 
         <div className="hamburger-button">
@@ -338,8 +479,12 @@ ul li {
           </button>
         </div>
         <div className="menu-items">
-          <button className="menu-button">All Courses</button>
-          <button className="menu-button">My Courses</button>
+          <Link to="/" state={{ tab: "all" }} className="menu-button">
+            All Courses
+          </Link>
+          <Link to="/" state={{ tab: "enrolled" }} className="menu-button">
+            My Courses
+          </Link>
           {(userRole === "Employee" || userRole === "Admin") && (
             <button className="menu-button">Add Course</button>
           )}
@@ -367,49 +512,67 @@ ul li {
               role="list"
               ref={listRef}
             >
-              <div className="video-list-heading">Course Videos</div>
-              <div className="video-list-content">
-                {[...Array(5)].map((_, index) => {
-                  const sectionNum = index + 1;
-                  const isOpen = openSections[sectionNum] || false;
-                  const videosInSection = videoList.slice(
-                    (sectionNum - 1) * 2,
-                    sectionNum * 2
-                  );
+              <div
+                className="video-list-heading"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <span>Course Videos</span>
+                <div style={{ width: 40, height: 40 }}>
+                  <CircularProgressbar
+                    value={progressPercent}
+                    text={`${progressPercent}%`}
+                    styles={buildStyles({
+                      pathColor: "#ff6210",
+                      textColor: "#333",
+                      trailColor: "#eee",
+                      textSize: "30px",
+                    })}
+                  />
+                </div>
+              </div>
 
-                  return (
-                    <div
-                      key={`section-${sectionNum}`}
-                      className="video-section"
-                    >
-                      <button
-                        className="video-section-title"
-                        onClick={() => toggleSection(sectionNum)}
-                      >
-                        Section {sectionNum}
-                      </button>
-                      {isOpen && (
-                        <div className="video-sublist">
-                          {videosInSection.map((video, idx) => (
-                            <button
-                              key={`${sectionNum}-${idx}`}
-                              className={`video-list-item ${
-                                currentVideoId === (sectionNum - 1) * 2 + idx
-                                  ? "active"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                setCurrentVideoId((sectionNum - 1) * 2 + idx)
-                              }
-                            >
-                              {`Video ${sectionNum}.${idx + 1}`} – {video.title}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div className="video-list-content">
+                {Object.entries(grouped).map(
+                  ([sectionTitle, videos], sectionIndex) => {
+                    const isOpen = openSections[sectionIndex] || false;
+                    return (
+                      <div key={sectionTitle} className="video-section">
+                        <button
+                          className="video-section-title"
+                          onClick={() => toggleSection(sectionIndex)}
+                        >
+                          {sectionTitle}
+                        </button>
+                        {isOpen && (
+                          <div className="video-sublist">
+                            {videos.map((video, idx) => {
+                              const globalIndex = videoList.findIndex(
+                                (v) => v === video
+                              );
+                              return (
+                                <button
+                                  key={`${sectionIndex}-${idx}`}
+                                  className={`video-list-item ${
+                                    currentVideoId === globalIndex
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                  onClick={() => handleVideoChange(globalIndex)}
+                                >
+                                  {video.title}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
               </div>
             </div>
           </div>
@@ -426,8 +589,24 @@ ul li {
 
           {!isEnrolled && (
             <div className="enroll">
-              <button>Enroll Now</button>
+              <button onClick={handleEnroll}>Enroll Now</button>
             </div>
+          )}
+
+          {isEnrolled && (
+            <div className="enroll">
+              <button className="enrolled-button" disabled>
+                Enrolled
+              </button>
+            </div>
+          )}
+
+          {enrollSuccess && (
+            <p
+              style={{ color: "green", textAlign: "center", marginTop: "10px" }}
+            >
+              ✅ You have successfully enrolled for this course!
+            </p>
           )}
         </div>
 
@@ -435,13 +614,10 @@ ul li {
           <h2>Course Details</h2>
           <ul>
             <li>
-              <strong>Difficulty:</strong> {courseInfo?.Difficulty}
+              <strong>Difficulty:</strong> {courseInfo?.Level}
             </li>
             <li>
               <strong>Duration:</strong> {courseInfo?.Duration}
-            </li>
-            <li>
-              <strong>Ratings:</strong> ⭐⭐⭐⭐☆
             </li>
             <li>
               <strong>Instructor:</strong> {courseInfo?.Instructor}

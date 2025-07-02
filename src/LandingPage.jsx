@@ -7,10 +7,11 @@ import {
   setDoc,
   doc,
 } from "firebase/firestore";
-import { useNavigate, Routes, Route } from "react-router-dom";
+import { useNavigate, Routes, Route, useLocation } from "react-router-dom";
 import { db } from "./FirebaseAuth";
 import CoursePage from "./CoursePage";
 import "./index.css";
+import logo from "./LOGO.jpg"; // adjust path if it's inside a subfolder like ./assets/logo.jpg
 
 function LandingPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,20 +21,34 @@ function LandingPage() {
     description: "",
     level: "Beginner",
     instructor: "",
+    aboutInstructor: "",
     thumbnailUrl: "",
+    overallDuration: "",
     sections: [
       {
         title: "",
-        videos: [{ title: "", videoUrl: "", duration: "" }],
+        videos: [{ title: "", videoUrl: "" }],
       },
     ],
   });
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
   const scrollContainerRef = useRef(null);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState("all");
+  const userRole = "Admin";
+
+  useEffect(() => {
+    const state = location.state;
+    if (state && state.tab === "enrolled") {
+      setActiveTab("enrolled");
+    } else {
+      setActiveTab("all");
+    }
+  }, [location.state]);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -90,6 +105,9 @@ function LandingPage() {
         instructor: newCourse.instructor,
         thumbnailUrl: newCourse.thumbnailUrl,
         isEnrolled: false,
+        overallDuration: newCourse.overallDuration,
+        aboutInstructor: newCourse.aboutInstructor,
+
         progress: 0,
       });
 
@@ -102,6 +120,8 @@ function LandingPage() {
         Level: newCourse.level,
         Category: newCourse.category,
         Sections: newCourse.sections,
+        Duration: newCourse.overallDuration,
+        AboutInstructor: newCourse.aboutInstructor,
       });
 
       // 3. Add videos as msth_video_#
@@ -126,10 +146,12 @@ function LandingPage() {
         level: "Beginner",
         instructor: "",
         thumbnailUrl: "",
+        overallDuration: "",
+        aboutInstructor: "",
         sections: [
           {
             title: "",
-            videos: [{ title: "", videoUrl: "", duration: "" }],
+            videos: [{ title: "", videoUrl: "" }],
           },
         ],
       });
@@ -168,7 +190,6 @@ function LandingPage() {
     updated[sectionIndex].videos.push({
       title: "",
       videoUrl: "",
-      duration: "",
     });
     setNewCourse({ ...newCourse, sections: updated });
   };
@@ -231,6 +252,32 @@ function LandingPage() {
     scrollContainerRef.current?.scrollBy({ left: 300, behavior: "smooth" });
   };
 
+  const handleDeleteCourse = async (courseId) => {
+    if (!window.confirm("Are you sure you want to delete this course?")) return;
+
+    try {
+      // 1. Delete from 'allcourses' collection
+      const snapshot = await getDocs(collection(db, "allcourses"));
+      const match = snapshot.docs.find((doc) => doc.data().id === courseId);
+      if (match) {
+        await deleteDoc(doc(db, "allcourses", match.id));
+      }
+
+      // 2. Delete entire course collection
+      const courseCollection = await getDocs(collection(db, courseId));
+      for (const docSnap of courseCollection.docs) {
+        await deleteDoc(doc(db, courseId, docSnap.id));
+      }
+
+      // 3. Refresh UI
+      alert("Course deleted successfully");
+      setAllCourses(allCourses.filter((c) => c.id !== courseId));
+    } catch (err) {
+      console.error("Error deleting course:", err);
+      alert("Failed to delete course.");
+    }
+  };
+
   return (
     <Routes>
       <Route
@@ -242,7 +289,7 @@ function LandingPage() {
               <div className="header-content">
                 <div className="branding">
                   <img
-                    src="/logo.png"
+                    src={logo}
                     alt="Maestrominds Logo"
                     className="logo"
                     onError={(e) => {
@@ -251,7 +298,7 @@ function LandingPage() {
                     }}
                   />
                   <div className="branding-text">
-                    <h1>Maestro hub</h1>
+                    <h1>MaestroHub</h1>
                     <p className="subtitle">Learning Platform</p>
                   </div>
                 </div>
@@ -398,6 +445,37 @@ function LandingPage() {
                           required
                         />
                       </div>
+                      <div className="form-group span-2">
+                        <label>About Instructor*</label>
+                        <textarea
+                          value={newCourse.aboutInstructor}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              aboutInstructor: e.target.value,
+                            })
+                          }
+                          placeholder="Brief details about the instructor..."
+                          rows="3"
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Overall Duration*</label>
+                        <input
+                          type="text"
+                          value={newCourse.overallDuration}
+                          onChange={(e) =>
+                            setNewCourse({
+                              ...newCourse,
+                              overallDuration: e.target.value,
+                            })
+                          }
+                          placeholder="e.g. 5 hours"
+                          required
+                        />
+                      </div>
 
                       <div className="form-group span-2">
                         <label>Course Sections & Videos</label>
@@ -472,24 +550,6 @@ function LandingPage() {
                                         required
                                       />
 
-                                      <input
-                                        type="text"
-                                        value={video.duration}
-                                        onChange={(e) => {
-                                          const updatedSections = [
-                                            ...newCourse.sections,
-                                          ];
-                                          updatedSections[sectionIndex].videos[
-                                            videoIndex
-                                          ].duration = e.target.value;
-                                          setNewCourse({
-                                            ...newCourse,
-                                            sections: updatedSections,
-                                          });
-                                        }}
-                                        placeholder="Duration (e.g. 10:30)"
-                                      />
-
                                       <button
                                         className="remove-video-btn"
                                         onClick={() =>
@@ -541,100 +601,112 @@ function LandingPage() {
 
               {activeTab === "all" && (
                 <>
-                  {enrolledCourses.length > 0 && searchTerm === "" && (
-                    <section className="enrolled-courses-section">
-                      <div className="section-header">
-                        <h2>Continue Learning</h2>
-                        <p>Your enrolled courses</p>
-                      </div>
-                      <div className="scroll-container">
-                        <button
-                          className="scroll-arrow left-arrow"
-                          onClick={scrollLeft}
-                        >
-                          &lt;
-                        </button>
-                        <div
-                          className="enrolled-courses-scroll"
-                          ref={scrollContainerRef}
-                        >
-                          {enrolledCourses.map((enrollment) => {
-                            const course = allCourses.find(
-                              (c) => c.id === enrollment.courseId
-                            );
-                            if (!course) return null;
-
-                            return (
-                              <div
-                                key={`enrolled-${enrollment.id}`}
-                                className="enrolled-course-card"
-                              >
-                                <div className="course-media">
-                                  <img
-                                    src={course.thumbnailUrl}
-                                    alt={course.name}
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src =
-                                        "https://placehold.co/300x200?text=No+Image";
-                                    }}
-                                    style={{
-                                      width: "100%",
-                                      height: "180px",
-                                      objectFit: "cover",
-                                      borderRadius: "8px",
-                                    }}
-                                  />
-
-                                  <div className="progress-container">
-                                    <div className="progress-bar">
-                                      <div
-                                        className="progress-fill"
-                                        style={{
-                                          width: `${enrollment.progress}%`,
-                                        }}
-                                      ></div>
-                                    </div>
-                                    <span>{enrollment.progress}% Complete</span>
-                                  </div>
-                                </div>
-                                <div className="course-details">
-                                  <h3>{course.name}</h3>
-                                  <p className="instructor">
-                                    By {course.instructor}
-                                  </p>
-                                  <p className="description">
-                                    {course.description}
-                                  </p>
-                                  <div className="course-actions">
-                                    <button className="continue-btn">
-                                      Continue Learning
-                                    </button>
-                                    <button
-                                      className="unenroll-btn"
-                                      onClick={() =>
-                                        handleUnenrollCourse(
-                                          enrollment.courseId
-                                        )
-                                      }
-                                    >
-                                      Unenroll
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
+                  {searchTerm === "" &&
+                    enrolledCourses.some((enrollment) =>
+                      allCourses.some(
+                        (course) => course.id === enrollment.courseId
+                      )
+                    ) && (
+                      <section className="enrolled-courses-section">
+                        <div className="section-header">
+                          <h2>Continue Learning</h2>
+                          <p>Your enrolled courses</p>
                         </div>
-                        <button
-                          className="scroll-arrow right-arrow"
-                          onClick={scrollRight}
-                        >
-                          &gt;
-                        </button>
-                      </div>
-                    </section>
-                  )}
+                        <div className="scroll-container">
+                          <button
+                            className="scroll-arrow left-arrow"
+                            onClick={scrollLeft}
+                          >
+                            &lt;
+                          </button>
+                          <div
+                            className="enrolled-courses-scroll"
+                            ref={scrollContainerRef}
+                          >
+                            {enrolledCourses.map((enrollment) => {
+                              const course = allCourses.find(
+                                (c) => c.id === enrollment.courseId
+                              );
+                              if (!course) return null;
+
+                              return (
+                                <div
+                                  key={`enrolled-${enrollment.id}`}
+                                  className="enrolled-course-card"
+                                >
+                                  <div className="course-media">
+                                    <img
+                                      src={course.thumbnailUrl}
+                                      alt={course.name}
+                                      onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src =
+                                          "https://placehold.co/300x200?text=No+Image";
+                                      }}
+                                      style={{
+                                        width: "100%",
+                                        height: "180px",
+                                        objectFit: "cover",
+                                        borderRadius: "8px",
+                                      }}
+                                    />
+
+                                    <div className="progress-container">
+                                      <div className="progress-bar">
+                                        <div
+                                          className="progress-fill"
+                                          style={{
+                                            width: `${enrollment.progress}%`,
+                                          }}
+                                        ></div>
+                                      </div>
+                                      <span>
+                                        {enrollment.progress}% Complete
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="course-details">
+                                    <h3>{course.name}</h3>
+                                    <p className="instructor">
+                                      By {course.instructor}
+                                    </p>
+                                    <p className="description">
+                                      {course.description}
+                                    </p>
+                                    <div className="course-actions">
+                                      <button
+                                        className="continue-btn"
+                                        onClick={() =>
+                                          navigate(`/course/${course.id}`)
+                                        }
+                                      >
+                                        Continue Learning
+                                      </button>
+                                      <button
+                                        className="unenroll-btn"
+                                        onClick={() =>
+                                          handleUnenrollCourse(
+                                            enrollment.courseId
+                                          )
+                                        }
+                                      >
+                                        Unenroll
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <button
+                            className="scroll-arrow right-arrow"
+                            onClick={scrollRight}
+                          >
+                            &gt;
+                          </button>
+                        </div>
+                      </section>
+                    )}
 
                   <section className="all-courses-section">
                     <div className="section-header">
@@ -676,7 +748,7 @@ function LandingPage() {
                                 {course.category || "General"}
                               </span>
                               <span className="duration">
-                                {course.duration}
+                                {course.overallDuration}
                               </span>
                             </div>
                             <h3>{course.name}</h3>
@@ -696,6 +768,17 @@ function LandingPage() {
                                   ? "Continue"
                                   : "Enroll Now"}
                               </button>
+                              {userRole === "Admin" && (
+                                <button
+                                  className="delete-course-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteCourse(course.id);
+                                  }}
+                                >
+                                  Delete Course
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -762,7 +845,7 @@ function LandingPage() {
                                   By {course.instructor}
                                 </span>
                                 <span className="duration">
-                                  {course.duration}
+                                  {course.overallDuration}
                                 </span>
                                 <span className="level">{course.level}</span>
                               </div>
@@ -770,7 +853,12 @@ function LandingPage() {
                                 {course.description}
                               </p>
                               <div className="card-actions">
-                                <button className="continue-btn">
+                                <button
+                                  className="continue-btn"
+                                  onClick={() =>
+                                    navigate(`/course/${course.id}`)
+                                  }
+                                >
                                   Continue Learning
                                 </button>
                                 <button
