@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
+import CustomAlert from "./CustomAlert";
 import { Link, useParams } from "react-router-dom";
 import app from "./FirebaseAuth";
 import {
@@ -51,6 +52,9 @@ export default function MaestroHub() {
   );
   const [showConfetti, setShowConfetti] = useState(false);
   const [width, height] = useWindowSize(); // for fullscreen confetti
+
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
 
   const { id } = useParams();
   const totalVideos = videoList.length;
@@ -121,7 +125,10 @@ export default function MaestroHub() {
       setEnrollSuccess(true); // <-- trigger message
     } catch (error) {
       console.error("Enrollment failed:", error);
-      alert("Failed to enroll. Please try again.");
+      setAlertMessage(
+        "🚫 You need to enroll in the course to watch the videos."
+      );
+      setAlertVisible(true);
     }
   };
 
@@ -159,25 +166,32 @@ export default function MaestroHub() {
     }
   };
 
-  const handleVideoChange = async (index: number) => {
+  const handleVideoChange = (index: number) => {
+    if (!isEnrolled) {
+      setAlertMessage(
+        "🚫 You need to enroll in the course to watch the videos."
+      );
+      setAlertVisible(true);
+      return;
+    }
     setCurrentVideoId(index);
+  };
 
+  const handleVideoEnd = async (index: number) => {
     if (!id || !isEnrolled) return;
 
-    // Avoid duplicate counts
     setWatchedVideoIds((prevSet) => {
       const newSet = new Set(prevSet);
-      newSet.add(index);
+      if (!newSet.has(index)) {
+        newSet.add(index);
 
-      const newProgress = Math.round((newSet.size / totalVideos) * 100);
+        const newProgress = Math.round((newSet.size / totalVideos) * 100);
+        updateProgressInFirestore(newProgress);
 
-      // Save progress to Firestore
-      updateProgressInFirestore(newProgress);
-
-      if (newSet.size === totalVideos) {
-        markCourseAsCompleted(); // ✅ New function to mark completion
+        if (newSet.size === totalVideos) {
+          markCourseAsCompleted();
+        }
       }
-
       return newSet;
     });
   };
@@ -352,6 +366,10 @@ export default function MaestroHub() {
   cursor: pointer;
   font-size: 1rem;
   transition: background 0.3s;
+
+    white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
        .video-list-item:hover {
   background-color: #f3e7d8;
@@ -437,27 +455,73 @@ ul li {
 }
 
         @media (max-width: 768px) {
-          .menu-bar {
-            justify-content: space-between;
-          }
-          .menu-items {
-            display: ${menuOpen ? "flex" : "none"};
-            flex-direction: column;
-            position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background-color: #ffffff;
-            padding: 1rem;
-            border-top: 1px solid #d1bfa7;
-          }
-          .hamburger-button {
-            display: block;
-          }
-          .main-content, .details-section {
-            grid-template-columns: 1fr;
-          }
-        }
+  .menu-bar {
+    justify-content: space-between;
+  }
+
+  .menu-items {
+    max-height: 0;
+  overflow: hidden;
+  flex-direction: column;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: #ffffff;
+  padding: 0;
+  border-top: 1px solid #d1bfa7;
+  z-index: 10;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  }
+
+  .menu-items.open {
+  max-height: 300px; /* or a high enough value */
+  padding: 1rem;
+}
+
+  .hamburger-button {
+    display: block;
+    background-color: #fff3e0;
+    border: 1px solid #d1bfa7;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .hamburger-button:hover {
+    background-color: #ffe0c1;
+    transform: scale(1.05);
+  }
+
+  .hamburger-button button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #5a4635;
+  }
+
+  .details-section {
+    grid-template-columns: 1fr;
+  }
+
+  /* ✅ THIS IS THE CORRECT CONTAINER TO CHANGE */
+  .course-content {
+    flex-direction: column !important;
+  }
+
+  .video-player-container,
+  .video-list-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: unset !important;
+  }
+
+  .video-player-container {
+    margin-bottom: 1.5rem;
+  }
+}
+
           
 
       `}</style>
@@ -478,7 +542,7 @@ ul li {
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-        <div className="menu-items">
+        <div className={`menu-items ${menuOpen ? "open" : ""}`}>
           <Link to="/" state={{ tab: "all" }} className="menu-button">
             All Courses
           </Link>
@@ -497,12 +561,33 @@ ul li {
           <div className="course-content">
             <div className="video-player-container">
               <div className="video-player">
-                <ReactPlayer
-                  url={currentVideo}
-                  controls
-                  width="100%"
-                  height="100%"
-                />
+                {isEnrolled ? (
+                  <ReactPlayer
+                    url={currentVideo}
+                    controls
+                    width="100%"
+                    height="100%"
+                    onEnded={() => handleVideoEnd(currentVideoId)}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      padding: "1rem",
+                      background: "#fff3e0",
+                      borderRadius: "1rem",
+                      fontWeight: "bold",
+                      fontSize: "1.2rem",
+                    }}
+                  >
+                    🔒 Please enroll in the course to watch the videos.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -577,6 +662,11 @@ ul li {
             </div>
           </div>
         </div>
+        <CustomAlert
+          visible={alertVisible}
+          message={alertMessage}
+          onClose={() => setAlertVisible(false)}
+        />
       </div>
 
       {/* Course Description & Details */}

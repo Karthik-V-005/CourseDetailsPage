@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import CustomAlert from "./CustomAlert";
+import CustomConfirm from "./CustomConfirm";
 import {
   collection,
+  onSnapshot,
   getDocs,
   addDoc,
   deleteDoc,
@@ -38,6 +41,11 @@ function LandingPage() {
   const [allCourses, setAllCourses] = useState([]);
   const location = useLocation();
   const [activeTab, setActiveTab] = useState("all");
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmCallback, setConfirmCallback] = useState(() => {});
+
   const userRole = "Admin";
 
   useEffect(() => {
@@ -52,27 +60,44 @@ function LandingPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const coursesSnapshot = await getDocs(collection(db, "allcourses"));
-        const coursesData = coursesSnapshot.docs.map((doc) => ({
-          id: doc.data().id,
-          ...doc.data(),
-        }));
+    const unsubscribeCourses = onSnapshot(
+      collection(db, "allcourses"),
+      (snapshot) => {
+        const coursesData = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            if (!data || !data.id || !data.name) return null; // skip invalid
+            return { id: data.id, ...data };
+          })
+          .filter(Boolean); // remove nulls
         setAllCourses(coursesData);
-
-        const enrollSnapshot = await getDocs(collection(db, "enrollments"));
-        const enrollData = enrollSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setEnrolledCourses(enrollData);
-      } catch (error) {
-        console.error("Fetch error:", error);
+      },
+      (error) => {
+        console.error("Error fetching courses:", error);
       }
-    };
+    );
 
-    fetchData();
+    const unsubscribeEnrollments = onSnapshot(
+      collection(db, "enrollments"),
+      (snapshot) => {
+        const enrollData = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            if (!data || !data.courseId) return null;
+            return { id: doc.id, ...data };
+          })
+          .filter(Boolean);
+        setEnrolledCourses(enrollData);
+      },
+      (error) => {
+        console.error("Error fetching enrollments:", error);
+      }
+    );
+
+    return () => {
+      unsubscribeCourses();
+      unsubscribeEnrollments();
+    };
   }, []);
 
   const handleEnrollCourse = async (courseId) => {
@@ -137,7 +162,9 @@ function LandingPage() {
         }
       }
 
-      alert("Course added successfully!");
+      setAlertMessage("✅ Course created successfully!");
+      setAlertVisible(true);
+
       setShowAddForm(false);
       setNewCourse({
         name: "",
@@ -157,7 +184,8 @@ function LandingPage() {
       });
     } catch (error) {
       console.error("Error adding course:", error);
-      alert("Failed to add course.");
+      setAlertMessage("Failed to add course");
+      setAlertVisible(true);
     }
   };
 
@@ -253,7 +281,8 @@ function LandingPage() {
   };
 
   const handleDeleteCourse = async (courseId) => {
-    if (!window.confirm("Are you sure you want to delete this course?")) return;
+    setConfirmCallback(() => () => handleDeleteCourse(courseId));
+    setConfirmVisible(true);
 
     try {
       // 1. Delete from 'allcourses' collection
@@ -270,11 +299,14 @@ function LandingPage() {
       }
 
       // 3. Refresh UI
-      alert("Course deleted successfully");
+      setAlertMessage("🗑 Course deleted successfully.");
+      setAlertVisible(true);
+
       setAllCourses(allCourses.filter((c) => c.id !== courseId));
     } catch (err) {
       console.error("Error deleting course:", err);
-      alert("Failed to delete course.");
+      setAlertMessage("Failed to Delete Course");
+      setAlertVisible(true);
     }
   };
 
@@ -884,6 +916,20 @@ function LandingPage() {
                   </div>
                 </section>
               )}
+              <CustomAlert
+                visible={alertVisible}
+                message={alertMessage}
+                onClose={() => setAlertVisible(false)}
+              />
+              <CustomConfirm
+                visible={confirmVisible}
+                message="Are you sure you want to delete this course?"
+                onCancel={() => setConfirmVisible(false)}
+                onConfirm={() => {
+                  confirmCallback();
+                  setConfirmVisible(false);
+                }}
+              />
             </main>
           </div>
         }
