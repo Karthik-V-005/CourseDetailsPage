@@ -20,8 +20,9 @@
   --space-xl: 3rem;
   
   /* Typography */
-  --font-main: 'Poppins', sans-serif;
-  --font-secondary: 'Open Sans', sans-serif;
+--font-main: 'Montserrat', sans-serif;
+--font-secondary: 'Montserrat', sans-serif;
+
 }
 
 * {
@@ -347,84 +348,10 @@ img {
 }
 
 /* Enrolled Courses (Horizontal Scroll) */
-.enrolled-courses-section {
-  margin-bottom: var(--space-xl);
-}
 
-.enrolled-courses-scroll {
-  display: flex;
-  gap: var(--space-md);
-  overflow-x: auto;
-  padding-bottom: var(--space-sm);
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-}
 
-.enrolled-courses-scroll::-webkit-scrollbar {
-  height: 6px;
-}
 
-.enrolled-courses-scroll::-webkit-scrollbar-track {
-  background: var(--light);
-}
 
-.enrolled-courses-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--primary-light);
-  border-radius: 3px;
-}
-
-.enrolled-course-card {
-  flex: 0 0 350px;
-  display: flex;
-  background-color: var(--white);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  transition: transform 0.3s ease;
-  scroll-snap-align: start;
-}
-
-.enrolled-course-card:hover {
-  transform: translateY(-5px);
-}
-
-.course-media {
-  width: 140px;
-  flex-shrink: 0;
-  position: relative;
-}
-
-.course-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.progress-container {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: rgba(0,0,0,0.7);
-  padding: var(--space-sm);
-  color: var(--white);
-}
-
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  background-color: rgba(255,255,255,0.2);
-  border-radius: 3px;
-  margin-bottom: 0.25rem;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background-color: var(--secondary);
-  border-radius: 3px;
-  transition: width 0.5s ease;
-}
 
 .course-details {
   padding: var(--space-md);
@@ -506,17 +433,6 @@ img {
   background-color: var(--primary);
 }
 
-.enrolled-badge {
-  position: absolute;
-  top: var(--space-sm);
-  right: var(--space-sm);
-  background-color: var(--primary);
-  color: var(--white);
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 500;
-}
 
 .card-body {
   padding: var(--space-md);
@@ -568,39 +484,6 @@ img {
   max-width: 150px; /* Limit width to keep buttons compact */
 }
 
-.continue-btn,
-.enroll-btn,
-.unenroll-btn {
-  font-size: 0.85rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.4rem;
-  border: none;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  width: 100%;
-  text-align: center;
-}
-
-.continue-btn,
-.enroll-btn {
-  background-color: hsla(21, 100%, 53%, 0.816);
-  color: white;
-}
-
-
-.enroll-btn:hover,
-.continue-btn:hover {
-  background-color: #e85a0c;
-}
-
-.unenroll-btn {
-  background-color: #8b4d3b;
-  color: white;
-}
-.unenroll-btn:hover {
-  background-color: #a45d48;
-}
 
 .delete-course-btn {
   background-color: #b91c1c;
@@ -642,9 +525,7 @@ img {
     justify-content: center;
   }
   
-  .enrolled-course-card {
-    flex: 0 0 300px;
-  }
+
 }
 
 @media (max-width: 768px) {
@@ -660,9 +541,7 @@ img {
     padding: var(--space-md) var(--space-sm);
   }
   
-  .enrolled-course-card {
-    flex-direction: column;
-  }
+
   
   .course-media {
     width: 100%;
@@ -680,13 +559,8 @@ img {
     width: 100%;
   }
   
-  .enrolled-courses-scroll {
-    gap: var(--space-sm);
-  }
-  
-  .enrolled-course-card {
-    flex: 0 0 280px;
-  }
+
+
 }
 /* Scroll Container Styles */
 .scroll-container {
@@ -726,20 +600,9 @@ img {
   right: -20px;
 }
 
-.enrolled-courses-scroll {
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  padding: 1rem;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  width: 100%;
-}
 
-.enrolled-courses-scroll::-webkit-scrollbar {
-  display: none;
-}
+
+
 
 /* Image Styles with Fallback */
 .course-media img {
@@ -879,17 +742,7 @@ input:required, select:required {
 .required-field {
   border-left: 2px solid var(--accent);
 }
-.enrolled-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background-color: #8B4513;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: bold;
-}
+
 /* Sections and Videos Styling */
 .sections-container {
   margin-top: 15px;

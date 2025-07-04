@@ -1,18 +1,24 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./LandingPage";
-import ScrollToTop from './ScrollToTop';
+import ScrollToTop from "./utilities/ScrollToTop";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import MaestroHub from "./CoursePage";
-import "./index.css";
+import AdminLandingPage from "./Admin/Admin_Landing/AdminLandingPage";
+import InternLandingPage from "./Intern_Employee/Landing/InternLandingPage";
+import AdminMaestroHub from "./Admin/Admin_Course/AdminCoursePage";
+import InternMaestroHub from "./Intern_Employee/Course/InternCoursePage";
+
+const userRole = "admin"; // or wherever you store role
+
+const LandingPage = userRole === "admin" ? AdminLandingPage : InternLandingPage;
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
-      <ScrollToTop/>
+      <ScrollToTop />
       <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/course/:id" element={<MaestroHub />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/course/:id" element={<InternMaestroHub />} />
+        <Route path="/admincourse/:id" element={<AdminMaestroHub />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>
